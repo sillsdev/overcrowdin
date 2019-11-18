@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Crowdin.Api;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Overcrowdin
@@ -24,7 +20,7 @@ namespace Overcrowdin
 		[Verb("generate", HelpText = "Generate a config file from Crowdin")]
 		public class Options : GlobalOptions
 		{
-			[Option('t', Required = false, Default = ConfigType.json, HelpText = "The configuration type")]
+			[Option('t', Required = false, Default = ConfigType.json, HelpText = "The configuration type. (Currently only JSON is supported)")]
 			public ConfigType Type { get; set; }
 
 			[Option('k', Required = false, Default = "CROWDIN_API_KEY", HelpText = "The environment variable holding the API key for your Crowdin project")]
@@ -35,33 +31,42 @@ namespace Overcrowdin
 
 			[Option('b', Required = false, Default = ".", HelpText = "The base path to use for file references")]
 			public string BasePath { get; set; }
+
+			[Option('f', Required = false, Default = "crowdin.json", HelpText = "The filename to save the configuration to.")]
+			public string OutputFile { get; set; }
 		}
 
 		public static async Task<int> GenerateConfigFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate)
 		{
-			var httpClient = new HttpClient { BaseAddress = new Uri(config["api"]) };
-			var crowdin = new Client(httpClient);
-
 			var success = 1;
 			var key = Environment.GetEnvironmentVariable(opts.Key);
 			if (!string.IsNullOrEmpty(key))
 			{
+				var crowdin = CrowdinCommand.GetClient();
 				var projectCredentials = new ProjectCredentials { ProjectKey = key };
-
-				ProjectInfo project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
-				dynamic jsonObject = new JObject();
-				jsonObject.project_identifier = opts.Identifier;
-				jsonObject.api_key_env = opts.Key;
-				jsonObject.base_path = opts.BasePath;
-				var jsonFiles = new JArray();
-				foreach (var file in project.Files)
+				ProjectInfo project;
+				try
 				{
-					AddFileOrDirectory(opts.BasePath, file, jsonFiles);
+					project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
+					dynamic jsonObject = new JObject();
+					dynamic jsonProjectCredentials = new JObject();
+					jsonProjectCredentials.projectId = opts.Identifier;
+					jsonProjectCredentials.projectKey = opts.Key;
+					jsonObject.projectCredentials = jsonProjectCredentials;
+					jsonObject.base_path = opts.BasePath;
+					var jsonFiles = new JArray();
+					foreach (var file in project.Files)
+					{
+						AddFileOrDirectory(opts.BasePath, file, jsonFiles);
+					}
+					jsonObject.files = jsonFiles;
+					File.WriteAllText(opts.OutputFile, jsonObject.ToString());
+					success = 0;
 				}
-				jsonObject.files = jsonFiles;
-				File.WriteAllText("crowdin.json", jsonObject.ToString());
-				Console.WriteLine(jsonObject.ToString());
-				success = 0;
+				catch (CrowdinException)
+				{
+					Console.WriteLine("Failed to retrieve project. Check your project id and project key.");
+				}
 			}
 			else
 			{
@@ -97,7 +102,7 @@ namespace Overcrowdin
 
 	public enum ConfigType
 	{
-		json,
-		yaml
+		json
+		// Future support: yaml
 	}
 }

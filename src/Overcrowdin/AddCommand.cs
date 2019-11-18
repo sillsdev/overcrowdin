@@ -23,13 +23,13 @@ namespace Overcrowdin
 
 		public static async Task<int> AddFilesToCrowdin(IConfiguration config, Options opts, AutoResetEvent gate)
 		{
-			var httpClient = new HttpClient { BaseAddress = new Uri(config["api"]) };
-			var crowdin = new Client(httpClient);
-
-			var projectCredentials = config.GetConfigValue<ProjectCredentials>("project");
+			var crowdin = CrowdinCommand.GetClient();
+			var projectId = config["project_identifier"];
+			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
+			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
 			var addFileParams = BuildAddFileParameters(config, opts);
 			Console.WriteLine("Adding {0} files...", addFileParams.Files.Count);
-			var result = await crowdin.AddFile(projectCredentials.ProjectId,
+			var result = await crowdin.AddFile(projectId,
 				projectCredentials, addFileParams);
 			if (result.IsSuccessStatusCode)
 			{

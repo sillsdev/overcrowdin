@@ -24,13 +24,14 @@ namespace Overcrowdin
 
 		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, AutoResetEvent gate)
 		{
-			var httpClient = new HttpClient { BaseAddress = new Uri(config["api"]) };
-			var crowdin = new Client(httpClient);
+			var crowdin = CrowdinCommand.GetClient();
 
-			var projectCredentials = config.GetConfigValue<ProjectCredentials>("project");
+			var projectId = config["project_identifier"];
+			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
+			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
 			var updateFileParameters = BuildUpdateFileParameters(config, opts);
 			Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
-			var result = await crowdin.UpdateFile(projectCredentials.ProjectId,
+			var result = await crowdin.UpdateFile(projectId,
 				projectCredentials, updateFileParameters);
 			if (result.IsSuccessStatusCode)
 			{
