@@ -1,0 +1,221 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CrowdinProjInfoResponseNoFiles" xml:space="preserve">
+    <value>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;info&gt;\\n
+  &lt;languages&gt;\\n
+    &lt;item&gt;\\n
+      &lt;name&gt;Acholi&lt;/name&gt;\\n
+      &lt;code&gt;ach&lt;/code&gt;\\n
+      &lt;can_translate&gt;1&lt;/can_translate&gt;\\n
+      &lt;can_approve&gt;1&lt;/can_approve&gt;\\n
+    &lt;/item&gt;\\n
+  &lt;/languages&gt;\\n
+  &lt;files/&gt;\\n
+  &lt;details&gt;\\n
+    &lt;source_language&gt;\\n
+      &lt;name&gt;English&lt;/name&gt;\\n
+      &lt;code&gt;en&lt;/code&gt;\\n
+    &lt;/source_language&gt;\\n
+    &lt;name&gt;CrowdinApiTestProject&lt;/name&gt;\\n
+    &lt;identifier&gt;crowdinapitestproject&lt;/identifier&gt;\\n
+    &lt;created&gt;2019-11-14T21:21:05+0000&lt;/created&gt;\\n
+    &lt;description/&gt;\\n
+    &lt;join_policy&gt;private&lt;/join_policy&gt;\\n
+    &lt;last_build&gt;2019-11-18T19:48:07+0000&lt;/last_build&gt;\\n
+    &lt;last_activity&gt;2019-11-19T16:59:49+0000&lt;/last_activity&gt;\\n
+    &lt;participants_count&gt;1&lt;/participants_count&gt;\\n
+    &lt;logo_url/&gt;\\n
+    &lt;total_strings_count&gt;0&lt;/total_strings_count&gt;\\n
+    &lt;total_words_count/&gt;\\n
+    &lt;duplicate_strings_count&gt;0&lt;/duplicate_strings_count&gt;\\n
+    &lt;duplicate_words_count&gt;0&lt;/duplicate_words_count&gt;\\n
+    &lt;invite_url&gt;\\n
+      &lt;translator&gt;https://crowdin.com/project/crowdinapitestproject/invite?d=n66546v4p6f5h573q4u4e36393&lt;/translator&gt;\\n
+      &lt;proofreader&gt;https://crowdin.com/project/crowdinapitestproject/invite?d=j665i605c6f5h573q4u4e36393&lt;/proofreader&gt;\\n
+    &lt;/invite_url&gt;\\n
+  &lt;/details&gt;\\n
+&lt;/info&gt;</value>
+    <comment>https://support.crowdin.com/api/info/</comment>
+  </data>
+  <data name="CrowdinProjInfoResponseWithFiles" xml:space="preserve">
+    <value>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;info&gt;\\n
+  &lt;languages&gt;\\n
+    &lt;item&gt;\\n
+      &lt;name&gt;Acholi&lt;/name&gt;\\n
+      &lt;code&gt;ach&lt;/code&gt;\\n
+      &lt;can_translate&gt;1&lt;/can_translate&gt;\\n
+      &lt;can_approve&gt;1&lt;/can_approve&gt;\\n
+    &lt;/item&gt;\\n
+  &lt;/languages&gt;\\n
+  &lt;files&gt;\\n
+    &lt;item&gt;\\n
+      &lt;node_type&gt;file&lt;/node_type&gt;\\n
+      &lt;id&gt;4&lt;/id&gt;\\n
+      &lt;name&gt;test.json&lt;/name&gt;\\n
+      &lt;created&gt;2019-11-14T22:02:27+0000&lt;/created&gt;\\n
+      &lt;last_updated&gt;2019-11-15T21:46:36+0000&lt;/last_updated&gt;\\n
+      &lt;last_accessed&gt;2019-11-18T16:47:23+0000&lt;/last_accessed&gt;\\n
+      &lt;last_revision&gt;2&lt;/last_revision&gt;\\n
+    &lt;/item&gt;\\n
+    &lt;item&gt;\\n
+      &lt;node_type&gt;directory&lt;/node_type&gt;\\n
+      &lt;id&gt;6&lt;/id&gt;\\n
+      &lt;name&gt;example&lt;/name&gt;\\n
+      &lt;files&gt;\\n
+        &lt;item&gt;\\n
+          &lt;node_type&gt;file&lt;/node_type&gt;\\n
+          &lt;id&gt;8&lt;/id&gt;\\n
+          &lt;name&gt;README.md&lt;/name&gt;\\n
+          &lt;created&gt;2019-11-15T21:51:43+0000&lt;/created&gt;\\n
+          &lt;last_updated&gt;2019-11-15T21:51:43+0000&lt;/last_updated&gt;\\n
+          &lt;last_accessed&gt;2019-11-18T16:46:27+0000&lt;/last_accessed&gt;\\n
+          &lt;last_revision&gt;1&lt;/last_revision&gt;\\n
+        &lt;/item&gt;\\n
+      &lt;/files&gt;\\n
+    &lt;/item&gt;\\n
+  &lt;/files&gt;\\n
+  &lt;details&gt;\\n
+    &lt;source_language&gt;\\n
+      &lt;name&gt;English&lt;/name&gt;\\n
+      &lt;code&gt;en&lt;/code&gt;\\n
+    &lt;/source_language&gt;\\n
+    &lt;name&gt;CrowdinApiTestProject&lt;/name&gt;\\n
+    &lt;identifier&gt;crowdinapitestproject&lt;/identifier&gt;\\n
+    &lt;created&gt;2019-11-14T21:21:05+0000&lt;/created&gt;\\n
+    &lt;description/&gt;\\n
+    &lt;join_policy&gt;private&lt;/join_policy&gt;\\n
+    &lt;last_build&gt;2019-11-18T19:48:07+0000&lt;/last_build&gt;\\n
+    &lt;last_activity&gt;2019-11-18T16:47:28+0000&lt;/last_activity&gt;\\n
+    &lt;participants_count&gt;1&lt;/participants_count&gt;\\n
+    &lt;logo_url/&gt;\\n
+    &lt;total_strings_count&gt;506&lt;/total_strings_count&gt;\\n
+    &lt;total_words_count&gt;2470&lt;/total_words_count&gt;\\n
+    &lt;duplicate_strings_count&gt;28&lt;/duplicate_strings_count&gt;\\n
+    &lt;duplicate_words_count&gt;39&lt;/duplicate_words_count&gt;\\n
+    &lt;invite_url&gt;\\n
+      &lt;translator&gt;https://crowdin.com/project/crowdinapitestproject/invite?d=n66546v4p6f5h573q4u4e36393&lt;/translator&gt;\\n
+      &lt;proofreader&gt;https://crowdin.com/project/crowdinapitestproject/invite?d=j665i605c6f5h573q4u4e36393&lt;/proofreader&gt;\\n
+    &lt;/invite_url&gt;\\n
+  &lt;/details&gt;\\n
+&lt;/info&gt;\\n</value>
+  </data>
+</root>

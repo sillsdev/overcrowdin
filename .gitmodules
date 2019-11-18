@@ -1,0 +1,3 @@
+[submodule "src/Crowdin.Api"]
+	path = src/Crowdin.Api
+	url = https://github.com/crowdin/crowdin-dotnet-client

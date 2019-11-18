@@ -1,6 +1,5 @@
 ﻿using System;
-using System.IO;
-using System.Net.Http;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -12,47 +11,25 @@ using Newtonsoft.Json.Linq;
 namespace Overcrowdin
 {
 	/// <summary>
-	/// This class will handle the command line arg for generating a configuration file for a Crowdin project
+	///    This class will handle the command line arg for generating a configuration file for a Crowdin project
 	/// </summary>
 	public class GenerateCommand
 	{
-
-		[Verb("generate", HelpText = "Generate a config file from Crowdin")]
-		public class Options : GlobalOptions
-		{
-			[Option('t', Required = false, Default = ConfigType.json, HelpText = "The configuration type. (Currently only JSON is supported)")]
-			public ConfigType Type { get; set; }
-
-			[Option('k', Required = false, Default = "CROWDIN_API_KEY", HelpText = "The environment variable holding the API key for your Crowdin project")]
-			public string Key { get; set; }
-
-			[Option('i', Required = true, HelpText = "The Project Identifier for your Crowdin project")]
-			public string Identifier { get; set; }
-
-			[Option('b', Required = false, Default = ".", HelpText = "The base path to use for file references")]
-			public string BasePath { get; set; }
-
-			[Option('f', Required = false, Default = "crowdin.json", HelpText = "The filename to save the configuration to.")]
-			public string OutputFile { get; set; }
-		}
-
-		public static async Task<int> GenerateConfigFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate)
+		public static async Task<int> GenerateConfigFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate, IFileSystem fs)
 		{
 			var success = 1;
 			var key = Environment.GetEnvironmentVariable(opts.Key);
 			if (!string.IsNullOrEmpty(key))
 			{
 				var crowdin = CrowdinCommand.GetClient();
-				var projectCredentials = new ProjectCredentials { ProjectKey = key };
+				var projectCredentials = new ProjectCredentials {ProjectKey = key};
 				ProjectInfo project;
 				try
 				{
 					project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
 					dynamic jsonObject = new JObject();
-					dynamic jsonProjectCredentials = new JObject();
-					jsonProjectCredentials.projectId = opts.Identifier;
-					jsonProjectCredentials.projectKey = opts.Key;
-					jsonObject.projectCredentials = jsonProjectCredentials;
+					jsonObject.project_identifier = opts.Identifier;
+					jsonObject.api_key_env = opts.Key;
 					jsonObject.base_path = opts.BasePath;
 					var jsonFiles = new JArray();
 					foreach (var file in project.Files)
@@ -60,7 +37,7 @@ namespace Overcrowdin
 						AddFileOrDirectory(opts.BasePath, file, jsonFiles);
 					}
 					jsonObject.files = jsonFiles;
-					File.WriteAllText(opts.OutputFile, jsonObject.ToString());
+					fs.File.WriteAllText(opts.OutputFile, jsonObject.ToString());
 					success = 0;
 				}
 				catch (CrowdinException)
@@ -72,6 +49,7 @@ namespace Overcrowdin
 			{
 				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", opts.Key);
 			}
+
 			gate.Set();
 			return success;
 		}
@@ -92,11 +70,30 @@ namespace Overcrowdin
 			{
 				var projectFolder = node as ProjectFolder;
 
-				foreach (var file in projectFolder.Files)
-				{
-					AddFileOrDirectory(path + "/" + node.Name, file, jsonFiles);
-				}
+				foreach (var file in projectFolder.Files) AddFileOrDirectory(path + "/" + node.Name, file, jsonFiles);
 			}
+		}
+
+		[Verb("generate", HelpText = "Generate a config file from Crowdin")]
+		public class Options : GlobalOptions
+		{
+			[Option('t', Required = false, Default = ConfigType.json,
+				HelpText = "The configuration type. (Currently only JSON is supported)")]
+			public ConfigType Type { get; set; }
+
+			[Option('k', Required = false, Default = "CROWDIN_API_KEY",
+				HelpText = "The environment variable holding the API key for your Crowdin project")]
+			public string Key { get; set; }
+
+			[Option('i', Required = true, HelpText = "The Project Identifier for your Crowdin project")]
+			public string Identifier { get; set; }
+
+			[Option('b', Required = false, Default = ".", HelpText = "The base path to use for file references")]
+			public string BasePath { get; set; }
+
+			[Option('f', Required = false, Default = "crowdin.json",
+				HelpText = "The filename to save the configuration to.")]
+			public string OutputFile { get; set; }
 		}
 	}
 

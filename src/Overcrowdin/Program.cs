@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO.Abstractions;
 using System.Threading;
 using CommandLine;
 using Microsoft.Extensions.Configuration;
@@ -23,11 +24,12 @@ namespace Overcrowdin
 		{
 			// Set the static Crowdin client factory for the main application
 			CrowdinCommand.ClientFactory = new CrowdinV1ApiFactory();
+			IFileSystem fileSystem = new FileSystem();
 
 			// Build the configuration from various sources
 			IConfiguration config = new ConfigurationBuilder()
 				.SetBasePath(Environment.CurrentDirectory)
-				.AddJsonFile("crowdin.json", false, false)
+				.AddJsonFile("crowdin.json", true, false)
 				.AddYamlFile("crowdin.yaml", true, false)
 				.AddEnvironmentVariables()
 				.AddCommandLine(args)
@@ -36,13 +38,13 @@ namespace Overcrowdin
 			var parseResult = Parser.Default.ParseArguments<GenerateCommand.Options, UpdateCommand.Options, AddCommand.Options, DownloadCommand.Options>(args)
 				.WithParsed<GenerateCommand.Options>(async opts =>
 					{
-						result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, Gate);
+						result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, Gate, fileSystem);
 					})
 				.WithParsed<UpdateCommand.Options>(async opts =>
 				{
 					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, Gate);
 				})
-				.WithParsed<AddCommand.Options>(async opts => await AddCommand.AddFilesToCrowdin(config, opts, Gate))
+				.WithParsed<AddCommand.Options>(async opts => await AddCommand.AddFilesToCrowdin(config, opts, Gate, fileSystem))
 				.WithParsed<DownloadCommand.Options>(async opts => await DownloadCommand.DownloadFromCrowdin(config, opts, Gate))
 				.WithNotParsed(errs =>
 				{
