@@ -74,7 +74,7 @@ namespace Overcrowdin
 			}
 		}
 
-		[Verb("generate", HelpText = "Generate a config file from Crowdin")]
+		[Verb("generate", HelpText = "Generate a config file from Crowdin.")]
 		public class Options : GlobalOptions
 		{
 			[Option('t', Required = false, Default = ConfigType.json,

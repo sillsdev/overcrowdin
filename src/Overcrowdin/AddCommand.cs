@@ -14,7 +14,7 @@ namespace Overcrowdin
 {
 	public sealed class AddCommand
 	{
-		[Verb("addfiles", HelpText = "Add files to Crowdin")]
+		[Verb("addfiles", HelpText = "Add files to Crowdin.")]
 		public class Options : GlobalOptions
 		{
 			[Option('f', "file", Required = false, HelpText = "Path(s) to a file to upload")]

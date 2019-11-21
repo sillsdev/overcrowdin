@@ -7,6 +7,17 @@
 	 <ToolCommandName>overcrowdin</ToolCommandName>
 	 <PackageOutputPath>./nupkg</PackageOutputPath>
     <LangVersion>7.2</LangVersion>
+    <Authors>Jason Naylor</Authors>
+    <Company>SIL International</Company>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Copyright>Copyright (c) SIL International</Copyright>
+    <Description>.NET Core Global Tool providing a limited but useful Crowdin CLI. Built over the
+Crowdin.Api [Copyright (c) 2019 crowdin]</Description>
+    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageProjectUrl></PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sillsdev/overcrowdin</RepositoryUrl>
+    <PackageTags>.NET Core;l10n;localization;cli</PackageTags>
+    <PackageReleaseNotes>First version includes support for generating a configuration file from a crowdin project, adding source files to crowdin, updating source files in crowdin and downloading translation zip files from crowdin.</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

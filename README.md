@@ -28,3 +28,23 @@ To see the program help run ```overcrowdin``` with no options.
 Q: Why don't you save the API Key in the configuration file?
 
 A: I don't want to make it easy to commit secrets into a github repository so I encourage the environment variable option that Crowdin supports in their CLI.
+
+### Developing Overcrowdin
+
+Requirements: .NET Core 2.1
+Recommendations: Visual Studio Community Edition
+
+
+```git clone https://github.com/sillsdev/overcrowdin```
+And until there is a Crowdin.Api Nuget package
+```
+cd overcrowdin
+git submodule update --init
+```
+
+Then you should be able to build the solution and run the unit tests
+```
+dotnet build
+cd OvercrowdinTests
+dotnet test
+```

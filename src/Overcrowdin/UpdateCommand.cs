@@ -14,7 +14,7 @@ namespace Overcrowdin
 {
 	public class UpdateCommand 
 	{
-		[Verb("updatefiles", HelpText = "Update files in Crowdin. Will use crowdin.json or files passed in as arguments")]
+		[Verb("updatefiles", HelpText = "Update files in Crowdin. Will use crowdin.json or files passed in as arguments.")]
 		public class Options : GlobalOptions
 		{
 			[Option('f', "file", Required = false, HelpText = "Path to a file to upload")]
