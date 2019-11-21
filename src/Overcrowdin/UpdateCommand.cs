@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Abstractions;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -22,45 +22,55 @@ namespace Overcrowdin
 			// TODO: Add option for update approval -- default to Update_as_unapproved
 		}
 
-		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, AutoResetEvent gate)
+		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, AutoResetEvent gate, IFileSystem fileSystem)
 		{
 			var crowdin = CrowdinCommand.GetClient();
 
 			var projectId = config["project_identifier"];
 			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
-			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
-			var updateFileParameters = BuildUpdateFileParameters(config, opts);
-			Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
-			var result = await crowdin.UpdateFile(projectId,
-				projectCredentials, updateFileParameters);
-			if (result.IsSuccessStatusCode)
+			int result = 1;
+			if (!string.IsNullOrEmpty(projectKey))
 			{
-				Console.WriteLine("Finished Updating files.");
-				if (opts.Verbose)
+				var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
+				var updateFileParameters = BuildUpdateFileParameters(config, opts, fileSystem);
+				Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
+				var crowdinResult = await crowdin.UpdateFile(projectId,
+					projectCredentials, updateFileParameters);
+				if (crowdinResult.IsSuccessStatusCode)
 				{
-					var info = await result.Content.ReadAsStringAsync();
-					Console.WriteLine(info);
+					Console.WriteLine("Finished Updating files.");
+					if (opts.Verbose)
+					{
+						var info = await crowdinResult.Content.ReadAsStringAsync();
+						Console.WriteLine(info);
+					}
 				}
+				else
+				{
+					Console.WriteLine("Failure updating files.");
+					if (opts.Verbose)
+					{
+						string error = await crowdinResult.Content.ReadAsStringAsync();
+						Console.WriteLine(error);
+					}
+				}
+				result = crowdinResult.IsSuccessStatusCode ? 0 : 1;
 			}
 			else
 			{
-				Console.WriteLine("Failure updating files.");
-				if (opts.Verbose)
-				{
-					string error = await result.Content.ReadAsStringAsync();
-					Console.WriteLine(error);
-				}
+				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", config["api_key_env"]);
 			}
+
 			gate.Set();
-			return result.IsSuccessStatusCode ? 0 : 1;
+			return result;
 		}
 
 
-		private static UpdateFileParameters BuildUpdateFileParameters(IConfiguration config, Options opts)
+		private static UpdateFileParameters BuildUpdateFileParameters(IConfiguration config, Options opts, IFileSystem fs)
 		{
 			var files = new Dictionary<string, FileInfo>();
 			// handle files specified on the command line
-			if (opts.Files.Any())
+			if (opts.Files != null && opts.Files.Any())
 			{
 				foreach (var file in opts.Files)
 				{
@@ -76,16 +86,14 @@ namespace Overcrowdin
 				//    "translation" : "resources/%two_letters_code%/%original_file_name"
 				//  }
 				// ]
-				var filesSection = config.GetSection("files").AsEnumerable();
-				foreach (var file in filesSection)
+				var valuesSection = config.GetSection("files");
+				foreach (IConfigurationSection section in valuesSection.GetChildren())
 				{
-					if (file.Key == "source")
+					var filePattern = section.GetValue<string>("source");
+					var matchedFiles = fs.Directory.GetFiles(fs.Directory.GetCurrentDirectory(), filePattern);
+					foreach (var sourceFile in matchedFiles)
 					{
-						var matchedFiles = Directory.GetFiles(".", file.Value);
-						foreach (var sourceFile in matchedFiles)
-						{
-							files[Path.GetFileName(sourceFile)] = new FileInfo(sourceFile);
-						}
+						files[Path.GetFileName(sourceFile)] = new FileInfo(sourceFile);
 					}
 				}
 			}

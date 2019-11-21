@@ -42,7 +42,7 @@ namespace Overcrowdin
 					})
 				.WithParsed<UpdateCommand.Options>(async opts =>
 				{
-					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, Gate);
+					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, Gate, fileSystem);
 				})
 				.WithParsed<AddCommand.Options>(async opts => await AddCommand.AddFilesToCrowdin(config, opts, Gate, fileSystem))
 				.WithParsed<DownloadCommand.Options>(async opts => await DownloadCommand.DownloadFromCrowdin(config, opts, Gate))
