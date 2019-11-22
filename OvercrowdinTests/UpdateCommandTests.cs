@@ -28,7 +28,7 @@ namespace OvercrowdinTests
 			const string projectId = "testcrowdinproject";
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
-			// Only setup the expected call to AddFile (any calls without the expected file params will return null)
+			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
 			var gate = new AutoResetEvent(false);
 			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } },
 				gate, mockFileSystem.FileSystem);
@@ -47,7 +47,7 @@ namespace OvercrowdinTests
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
-			// Only setup the expected call to AddFile (any calls without the expected file params will return null)
+			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
 			_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
 			var gate = new AutoResetEvent(false);
@@ -82,7 +82,7 @@ namespace OvercrowdinTests
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
-				// Only setup the expected call to AddFile (any calls without the expected file params will return null)
+				// Set up only the expected call to AddFile (any calls without the expected file params will return null)
 				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
 				var gate = new AutoResetEvent(false);
