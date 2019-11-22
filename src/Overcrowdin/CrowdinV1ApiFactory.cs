@@ -41,7 +41,7 @@ namespace Overcrowdin
 				return _crowdin.AddFile(projectId, projectCredentials, addFileParams);
 			}
 
-			public Task ExportTranslation(string projectId, ProjectCredentials projectCredentials,
+			public Task<HttpResponseMessage> ExportTranslation(string projectId, ProjectCredentials projectCredentials,
 				ExportTranslationParameters exportTranslationParameters)
 			{
 				return _crowdin.ExportTranslation(projectId, projectCredentials, exportTranslationParameters);
