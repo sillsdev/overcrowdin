@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
+using System.IO.Abstractions;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Crowdin.Api;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
 
 namespace Overcrowdin
 {
-	class DownloadCommand
+	public class DownloadCommand
 	{
 		[Verb("download", HelpText = "Download the latest translations from Crowdin")]
 		public class Options : GlobalOptions
@@ -30,7 +27,7 @@ namespace Overcrowdin
 		}
 
 
-		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate)
+		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate, IFileSystem fs)
 		{
 			var crowdin = CrowdinCommand.GetClient();
 
@@ -40,33 +37,45 @@ namespace Overcrowdin
 			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
 
 			var outputFile = Path.Combine(config["base_path"], opts.Filename);
-			try
+			if (!string.IsNullOrEmpty(projectKey))
 			{
-				if (opts.ExportFirst)
+				try
 				{
-					await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters());
-				}
-				var downloadResponse = await crowdin.DownloadTranslation(projectId,
-					projectCredentials, new DownloadTranslationParameters { Package = opts.Language });
-				if (downloadResponse.IsSuccessStatusCode)
-				{
-					using (var downloadedFile = new FileStream(outputFile, FileMode.Create))
+					var exportFailed = false;
+					if (opts.ExportFirst)
 					{
-						downloadedFile.Write(await downloadResponse.Content.ReadAsByteArrayAsync());
+						var exportResponse = await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters());
+						exportFailed = !exportResponse.IsSuccessStatusCode;
+					}
+					if (!exportFailed)
+					{
+						var downloadResponse = await crowdin.DownloadTranslation(projectId,
+							projectCredentials, new DownloadTranslationParameters { Package = opts.Language });
+						if (downloadResponse.IsSuccessStatusCode)
+						{
+							using (var downloadedFile = fs.FileStream.Create(outputFile, FileMode.Create))
+							{
+								downloadedFile.Write(await downloadResponse.Content.ReadAsByteArrayAsync());
+							}
+						}
+						success = 0;
 					}
 				}
-				success = 0;
-			}
-			catch (CrowdinException e)
-			{
-				Console.WriteLine("Failed to download translations. Check your project id and project key.");
-				if (opts.Verbose)
+				catch (CrowdinException e)
 				{
-					Console.WriteLine(e.ErrorCode);
-					Console.WriteLine(e.StackTrace);
+					Console.WriteLine("Failed to download translations. Check your project id and project key.");
+					if (opts.Verbose)
+					{
+						Console.WriteLine(e.ErrorCode);
+						Console.WriteLine(e.StackTrace);
+					}
 				}
+				Console.WriteLine("Translations file downloaded to {0}", outputFile);
 			}
-			Console.WriteLine("Translations file downloaded to {0}", outputFile);
+			else
+			{
+				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", config["api_key_env"]);
+			}
 			gate.Set();
 			return success;
 		}
