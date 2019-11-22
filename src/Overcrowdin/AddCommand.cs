@@ -69,24 +69,7 @@ namespace Overcrowdin
 			}
 			else
 			{
-				// handle configuration files section that resembles:
-				// files : [
-				//  {
-				//    "source" : "resources/en/*.json",
-				//    "translation" : "resources/%two_letters_code%/%original_file_name"
-				//  }
-				// ]
-				// ENHANCE: put the translation destination into Crowdin
-				var valuesSection = config.GetSection("files");
-				foreach (IConfigurationSection section in valuesSection.GetChildren())
-				{
-					var filePattern = section.GetValue<string>("source");
-					var matchedFiles = fs.Directory.GetFiles(fs.Directory.GetCurrentDirectory(), filePattern);
-					foreach (var sourceFile in matchedFiles)
-					{
-						files[Path.GetFileName(sourceFile)] = new FileInfo(sourceFile);
-					}
-				}
+				CommandUtilities.GetFilesFromConfiguration(config, fs, files);
 			}
 
 			return new AddFileParameters { Files = files };

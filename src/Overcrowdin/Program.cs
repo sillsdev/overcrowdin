@@ -8,12 +8,6 @@ namespace Overcrowdin
 {
 	internal sealed class Program
 	{
-		private Program(IConfiguration config)
-		{
-			Configuration = config;
-		}
-
-		private IConfiguration Configuration { get; }
 		/// <summary>
 		/// Because the async lambda functions return immediately we need a semaphore to make sure we wait for the
 		/// Crowdin response on any Crowdin api calls before we exit.
