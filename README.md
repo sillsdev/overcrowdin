@@ -31,8 +31,10 @@ A: I don't want to make it easy to commit secrets into a github repository so I 
 ### Developing Overcrowdin
 
 #### Status
-[![Build Status](https://build.palaso.org/app/rest/builds/buildType:(id:Overcrowdin_OvercrowdinCi)/statusIcon)](https://build.palaso.org/viewType.html?buildTypeId=Overcrowdin_OvercrowdinCi)
+![Build Status](<https://build.palaso.org/app/rest/builds/buildType:(id:Overcrowdin_OvercrowdinCi)/statusIcon>)
+![Test coverage](<https://img.shields.io/badge/dynamic/xml?label=Test%20coverage&suffix=%&query=//property[@name=%22CodeCoverageS%22]/@value&url=https%3A%2F%2Fbuild.palaso.org%2Fapp%2Frest%2Fbuilds%2FbuildType%3A(id%3AOvercrowdin_OvercrowdinCi)%2Fstatistics%3Fguest%3D1&style=flat>)
 [![GitHub](https://img.shields.io/github/license/sillsdev/overcrowdin)](https://github.com/sillsdev/overcrowdin/blob/master/LICENSE)
+
 
 #### Developer Requirements
 * .NET Core 2.1
