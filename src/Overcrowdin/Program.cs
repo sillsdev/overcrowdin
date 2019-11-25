@@ -24,7 +24,6 @@ namespace Overcrowdin
 			IConfiguration config = new ConfigurationBuilder()
 				.SetBasePath(Environment.CurrentDirectory)
 				.AddJsonFile("crowdin.json", true, false)
-				.AddYamlFile("crowdin.yaml", true, false)
 				.AddEnvironmentVariables()
 				.AddCommandLine(args)
 				.Build();
