@@ -32,6 +32,7 @@ A: I don't want to make it easy to commit secrets into a github repository so I 
 
 #### Status
 ![Build Status](<https://build.palaso.org/app/rest/builds/buildType:(id:Overcrowdin_OvercrowdinCi)/statusIcon>)
+[![GitHub contributors](https://img.shields.io/github/contributors/crowdin/crowdin-dotnet-client?cacheSeconds=10000)](https://github.com/crowdin/crowdin-dotnet-client/graphs/contributors)
 ![Test coverage](<https://img.shields.io/badge/dynamic/xml?label=Test%20coverage&suffix=%&query=//property[@name=%22CodeCoverageS%22]/@value&url=https%3A%2F%2Fbuild.palaso.org%2Fapp%2Frest%2Fbuilds%2FbuildType%3A(id%3AOvercrowdin_OvercrowdinCi)%2Fstatistics%3Fguest%3D1&style=flat>)
 [![GitHub](https://img.shields.io/github/license/sillsdev/overcrowdin)](https://github.com/sillsdev/overcrowdin/blob/master/LICENSE)
 

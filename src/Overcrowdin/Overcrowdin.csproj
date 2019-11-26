@@ -9,11 +9,11 @@
     <LangVersion>7.2</LangVersion>
     <Authors>Jason Naylor</Authors>
     <Company>SIL International</Company>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Copyright>Copyright (c) SIL International</Copyright>
     <Description>.NET Core Global Tool providing a limited but useful Crowdin CLI. Built over the
 Crowdin.Api [Copyright (c) 2019 crowdin]</Description>
-    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sillsdev/overcrowdin</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sillsdev/overcrowdin</RepositoryUrl>
     <PackageTags>.NET Core;l10n;localization;cli</PackageTags>
