@@ -74,7 +74,7 @@ namespace Overcrowdin
 			{
 				foreach (var file in opts.Files)
 				{
-					files[Path.GetFileName(file)] = new FileInfo(file);
+					files[file] = new FileInfo(file); // TODO (Hasso) 2019.12: use the full relative path here and elsewhere. Centralize.
 				}
 			}
 			else
