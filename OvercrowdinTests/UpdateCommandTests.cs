@@ -23,7 +23,7 @@ namespace OvercrowdinTests
 		public async void MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
-			const string inputFileName = "test.json";
+			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "NOKEYEXISTS";
 			const string projectId = "testcrowdinproject";
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
@@ -41,7 +41,7 @@ namespace OvercrowdinTests
 		public async void UpdateCommandWithCommandLine()
 		{
 			var mockFileSystem = new MockFileSystem();
-			const string inputFileName = "test.json";
+			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
 			const string projectId = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
@@ -62,18 +62,18 @@ namespace OvercrowdinTests
 		public async void UpdateCommandWithConfigFile()
 		{
 			var mockFileSystem = new MockFileSystem();
-			const string inputFileName = "test.json";
+			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
 			const string projectId = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
-			mockFileSystem.File.WriteAllText("test.json", "{ mock: config }");
+			mockFileSystem.File.WriteAllText(inputFileName, "mock contents");
 			dynamic configJson = new JObject();
 
 			configJson.project_id = projectId;
 			configJson.api_key_env = apiKeyEnvVar;
 			configJson.base_path = ".";
 			dynamic file = new JObject();
-			file.source = "test.json";
+			file.source = inputFileName;
 			var files = new JArray();
 			files.Add(file);
 			configJson.files = files;
