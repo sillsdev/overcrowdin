@@ -1,8 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -15,7 +13,7 @@ namespace Overcrowdin
 	public class UpdateCommand 
 	{
 		[Verb("updatefiles", HelpText = "Update files in Crowdin. Will use crowdin.json or files passed in as arguments.")]
-		public class Options : GlobalOptions
+		public class Options : GlobalOptions, IFileOptions
 		{
 			[Option('f', "file", Required = false, HelpText = "Path to a file to upload")]
 			public IEnumerable<string> Files { get; set; }
@@ -32,7 +30,7 @@ namespace Overcrowdin
 			if (!string.IsNullOrEmpty(projectKey))
 			{
 				var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
-				var updateFileParameters = BuildUpdateFileParameters(config, opts, fileSystem);
+				var updateFileParameters = new UpdateFileParameters { Files = CommandUtilities.GetFileList(config, opts, fileSystem) };
 				Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
 				var crowdinResult = await crowdin.UpdateFile(projectId,
 					projectCredentials, updateFileParameters);
@@ -63,26 +61,6 @@ namespace Overcrowdin
 
 			gate.Set();
 			return result;
-		}
-
-
-		private static UpdateFileParameters BuildUpdateFileParameters(IConfiguration config, Options opts, IFileSystem fs)
-		{
-			var files = new Dictionary<string, FileInfo>();
-			// handle files specified on the command line
-			if (opts.Files != null && opts.Files.Any())
-			{
-				foreach (var file in opts.Files)
-				{
-					files[Path.GetFileName(file)] = new FileInfo(file);
-				}
-			}
-			else
-			{
-				CommandUtilities.GetFilesFromConfiguration(config, fs, files);
-			}
-
-			return new UpdateFileParameters { Files = files };
 		}
 	}
 }
