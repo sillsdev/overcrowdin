@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -15,7 +13,7 @@ namespace Overcrowdin
 	public sealed class AddCommand
 	{
 		[Verb("addfiles", HelpText = "Add files to Crowdin.")]
-		public class Options : GlobalOptions
+		public class Options : GlobalOptions, IFileOptions
 		{
 			[Option('f', "file", Required = false, HelpText = "Path(s) to a file to upload")]
 			public IEnumerable<string> Files { get; set; }
@@ -27,7 +25,7 @@ namespace Overcrowdin
 			var projectId = config["project_identifier"];
 			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
 			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
-			var addFileParams = BuildAddFileParameters(config, opts, fs);
+			var addFileParams = new AddFileParameters { Files = CommandUtilities.GetFileList(config, opts, fs) };
 			Console.WriteLine("Adding {0} files...", addFileParams.Files.Count);
 			var result = await crowdin.AddFile(projectId,
 				projectCredentials, addFileParams);
@@ -51,28 +49,6 @@ namespace Overcrowdin
 			}
 			gate.Set();
 			return result.IsSuccessStatusCode ? 0 : 1;
-		}
-
-		/// <summary>
-		/// TODO: If a common IFileParameters is added to the Crowdin API then make a generic method to do both Add and Update
-		/// </summary>
-		private static AddFileParameters BuildAddFileParameters(IConfiguration config, Options opts, IFileSystem fs)
-		{
-			var files = new Dictionary<string, FileInfo>();
-			// handle files specified on the command line
-			if (opts.Files != null && opts.Files.Any())
-			{
-				foreach (var file in opts.Files)
-				{
-					files[Path.GetFileName(file)] = new FileInfo(file);
-				}
-			}
-			else
-			{
-				CommandUtilities.GetFilesFromConfiguration(config, fs, files);
-			}
-
-			return new AddFileParameters { Files = files };
 		}
 	}
 }
