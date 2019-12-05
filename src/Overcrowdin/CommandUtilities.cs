@@ -42,14 +42,30 @@ namespace Overcrowdin
 		/// </summary>
 		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, Dictionary<string, FileInfo> files)
 		{
+			var basePath = config.GetValue<string>("base_path");
+			basePath = basePath.Equals(".")
+				? fs.Directory.GetCurrentDirectory()
+				// DirectoryInfo will normalize the path; Combine will determine whether to treat basePath as absolute.
+				: fs.DirectoryInfo.FromDirectoryName(Path.Combine(fs.Directory.GetCurrentDirectory(), basePath)).FullName;
+			var basePathLength = basePath.Length;
+			// The root directory (C:\ or /) contains a trailing path separator character; other paths do not; always include it in the length
+			if (!basePath.EndsWith(Path.DirectorySeparatorChar))
+			{
+				basePathLength++;
+			}
+
 			var filesSection = config.GetSection("files");
 			foreach (IConfigurationSection section in filesSection.GetChildren())
 			{
 				var source = section.GetValue<string>("source");
-				var basePath = fs.Directory.GetCurrentDirectory();
-				var basePathLength = basePath.Length;
-				var directory = Path.Combine(basePath, Path.GetDirectoryName(source));
+				// A leading directory separator char (permissible in source) causes Path.Combine to interpret the path as rooted,
+				// but the source path is always relative (to base_path), so use join here.
+				var directory = fs.DirectoryInfo.FromDirectoryName(Path.Join(basePath, Path.GetDirectoryName(source))).FullName;
 				var searchOption = SearchOption.TopDirectoryOnly;
+				if (!directory.StartsWith(basePath))
+				{
+					throw new NotSupportedException($"All files must be within the base path. The following may not be: {source}");
+				}
 				if (directory.Contains("***"))
 				{
 					throw new NotImplementedException(UnsupportedSyntaxX + source);
@@ -68,7 +84,6 @@ namespace Overcrowdin
 				var matchedFiles = fs.Directory.GetFiles(directory, filePattern, searchOption);
 				foreach (var sourceFile in matchedFiles)
 				{
-					// two off-by-one errors cancel each other out to cleanly trim the path separator from the key
 					files[sourceFile.Substring(basePathLength)] = new FileInfo(sourceFile);
 				}
 			}
