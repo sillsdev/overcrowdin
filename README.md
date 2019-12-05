@@ -1,4 +1,4 @@
-## Overcrowdin - A Crowdin dotnet CLI
+## Overcrowdin - A dotnet Crowdin CLI
 
 <a href="https://crowdin.com" target="_blank">Crowdin</a> is an amazing, cloud-based localization management system which many projects are using for localization.
 It provides a CLI in Java (<a href="https://github.com/crowdin/crowdin-cli-2" target="_blank">https://github.com/crowdin/crowdin-cli-2</a>), but that adds dependencies that many projects do not want. This project provides an alternative in the form of a <a href="https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools" target="_blank">.NET Core Global Tool</a>. 

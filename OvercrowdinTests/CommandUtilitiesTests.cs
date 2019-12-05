@@ -144,7 +144,7 @@ namespace OvercrowdinTests
 		[InlineData("john/*/*.txt")]
 		[InlineData("**/quincy/**/*.txt")]
 		[InlineData("john/**/doe/*.txt")]
-		public void HelpfulErrorsForUnsupportedSyntax(string sourceExpression)
+		public void HelpfulErrorsForUnimplementedSyntax(string sourceExpression)
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(sourceExpression);
@@ -160,8 +160,44 @@ namespace OvercrowdinTests
 		}
 
 		[Theory]
+		[InlineData(@"C:\john", "../jane/*.txt")]
+		public void HelpfulErrorsForUnsupportedPaths(string basePath, string subPath)
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			var configJson = SetUpConfig(subPath, basePath);
+			var foundFiles = new Dictionary<string, FileInfo>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles));
+				Assert.Contains(subPath, e.Message);
+			}
+		}
+
+		[Fact]
+		public void HelpfulErrorsForAbsoluteSourcePaths()
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			var configJson = SetUpConfig("C:/jane/*.txt", @"C:\john");
+			var foundFiles = new Dictionary<string, FileInfo>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				// DNF is helpful enough, and checking earlier is too complicated for such an unexpected error
+				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles));
+				Assert.Contains(@"C:\john\C:\jane", e.Message);
+			}
+		}
+
+		[Theory]
 		[InlineData(".", @"jane\doe\test.txt")]
-		[InlineData(@"jane\doe", @"test.txt", Skip = "for followup commit. Ship early; ship often.")] // TODO: implement absolute base path handling
+		[InlineData(@"jane\doe", "test.txt")]
+		[InlineData(@"jane\doe\", "test.txt")]
+		[InlineData(@"jane/doe/", "test.txt")]
+		[InlineData(@"C:\jane\doe", "test.txt")]
+		[InlineData("john/../jane/doe/", "test.txt")]
 		public void BasePathExcludedFromKeys(string basePath, string subPath)
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
@@ -177,6 +213,62 @@ namespace OvercrowdinTests
 			Assert.Single(foundFiles);
 			Assert.Equal(@"C:\jane\doe\test.txt", foundFiles.Values.First().FullName);
 			Assert.Equal(subPath, foundFiles.Keys.First());
+		}
+
+		[Fact]
+		public void AbsoluteBasePathWorks()
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			var configJson = SetUpConfig("/adams/test.txt", "C:/john/quincy");
+			var foundFiles = new Dictionary<string, FileInfo>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				var originalDir = mockFileSystem.Directory.GetCurrentDirectory();
+				try
+				{
+					mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				}
+				finally
+				{
+					mockFileSystem.Directory.SetCurrentDirectory(originalDir);
+				}
+			}
+
+			Assert.Single(foundFiles);
+			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
+			Assert.Equal(@"adams\test.txt", foundFiles.Keys.First());
+		}
+
+		[Theory]
+		[InlineData(@"C:\john", "quincy")]
+		[InlineData(@"C:\john\quincy\doe", "..")]
+		public void RelativeBasePathWorks(string currentDir, string relativeBasePath)
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			var configJson = SetUpConfig("/adams/test.txt", relativeBasePath);
+			var foundFiles = new Dictionary<string, FileInfo>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				var originalDir = mockFileSystem.Directory.GetCurrentDirectory();
+				try
+				{
+					mockFileSystem.Directory.SetCurrentDirectory(currentDir);
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				}
+				finally
+				{
+					mockFileSystem.Directory.SetCurrentDirectory(originalDir);
+				}
+			}
+
+			Assert.Single(foundFiles);
+			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
+			Assert.Equal(@"adams\test.txt", foundFiles.Keys.First());
 		}
 	}
 }
