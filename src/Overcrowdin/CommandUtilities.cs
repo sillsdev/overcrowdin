@@ -84,7 +84,9 @@ namespace Overcrowdin
 				var matchedFiles = fs.Directory.GetFiles(directory, filePattern, searchOption);
 				foreach (var sourceFile in matchedFiles)
 				{
-					files[sourceFile.Substring(basePathLength)] = new FileInfo(sourceFile);
+					// Key is the relative path with Unix directory separators
+					var key = sourceFile.Substring(basePathLength).Replace(Path.DirectorySeparatorChar, '/');
+					files[key] = new FileInfo(sourceFile);
 				}
 			}
 		}

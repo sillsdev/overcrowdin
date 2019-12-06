@@ -192,7 +192,7 @@ namespace OvercrowdinTests
 		}
 
 		[Theory]
-		[InlineData(".", @"jane\doe\test.txt")]
+		[InlineData(".", "jane/doe/test.txt")]
 		[InlineData(@"jane\doe", "test.txt")]
 		[InlineData(@"jane\doe\", "test.txt")]
 		[InlineData(@"jane/doe/", "test.txt")]
@@ -239,7 +239,7 @@ namespace OvercrowdinTests
 
 			Assert.Single(foundFiles);
 			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
-			Assert.Equal(@"adams\test.txt", foundFiles.Keys.First());
+			Assert.Equal("adams/test.txt", foundFiles.Keys.First());
 		}
 
 		[Theory]
@@ -268,7 +268,7 @@ namespace OvercrowdinTests
 
 			Assert.Single(foundFiles);
 			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
-			Assert.Equal(@"adams\test.txt", foundFiles.Keys.First());
+			Assert.Equal("adams/test.txt", foundFiles.Keys.First());
 		}
 	}
 }
