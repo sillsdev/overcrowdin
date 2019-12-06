@@ -45,11 +45,6 @@ A: I don't want to make it easy to commit secrets into a github repository so I 
 
 #### Cloning
 ```git clone https://github.com/sillsdev/overcrowdin```
-And until there is a Crowdin.Api Nuget package
-```
-cd overcrowdin
-git submodule update --init
-```
 
 Then you should be able to build the solution and run the unit tests
 ```
