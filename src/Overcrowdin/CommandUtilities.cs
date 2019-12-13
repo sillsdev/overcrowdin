@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 
 namespace Overcrowdin
@@ -12,23 +13,25 @@ namespace Overcrowdin
 		private const string UnsupportedSyntaxX =
 			"The specified source syntax is not supported. Please submit a pull request to help us support ";
 
-		public static Dictionary<string, FileInfo> GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs)
+		public static void GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs, FileParameters fileParams)
 		{
-			var files = new Dictionary<string, FileInfo>();
+			if (fileParams.Files == null)
+			{
+				fileParams.Files = new Dictionary<string, FileInfo>();
+			}
+
 			// handle files specified on the command line
 			if (opts.Files != null && opts.Files.Any())
 			{
 				foreach (var file in opts.Files)
 				{
-					files[file] = new FileInfo(file); // TODO (Hasso) 2019.12: use the full relative path here and elsewhere. Centralize.
+					fileParams.Files[file] = new FileInfo(file); // TODO (Hasso) 2019.12: normalize keys: no C:\, Unix dir separators, (filename only?)
 				}
 			}
 			else
 			{
-				GetFilesFromConfiguration(config, fs, files);
+				GetFilesFromConfiguration(config, fs, fileParams);
 			}
-
-			return files;
 		}
 
 		/// <summary>Read from configuration files section that resembles:
@@ -38,10 +41,18 @@ namespace Overcrowdin
 		///    "translation" : "resources/%two_letters_code%/%original_file_name"
 		///  }
 		/// ]
-		/// ENHANCE: put the translation destination into Crowdin
 		/// </summary>
-		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, Dictionary<string, FileInfo> files)
+		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, FileParameters fileParams)
 		{
+			if (fileParams.Files == null)
+			{
+				fileParams.Files = new Dictionary<string, FileInfo>();
+			}
+			if (fileParams.ExportPatterns == null)
+			{
+				fileParams.ExportPatterns = new Dictionary<string, string>();
+			}
+
 			var basePath = config.GetValue<string>("base_path");
 			basePath = basePath.Equals(".")
 				? fs.Directory.GetCurrentDirectory()
@@ -58,6 +69,7 @@ namespace Overcrowdin
 			foreach (IConfigurationSection section in filesSection.GetChildren())
 			{
 				var source = section.GetValue<string>("source");
+				var translation = section.GetValue<string>("translation");
 				// A leading directory separator char (permissible in source) causes Path.Combine to interpret the path as rooted,
 				// but the source path is always relative (to base_path), so use join here.
 				var directory = fs.DirectoryInfo.FromDirectoryName(Path.Join(basePath, Path.GetDirectoryName(source))).FullName;
@@ -84,7 +96,10 @@ namespace Overcrowdin
 				var matchedFiles = fs.Directory.GetFiles(directory, filePattern, searchOption);
 				foreach (var sourceFile in matchedFiles)
 				{
-					files[sourceFile.Substring(basePathLength)] = new FileInfo(sourceFile);
+					// Key is the relative path with Unix directory separators
+					var key = sourceFile.Substring(basePathLength).Replace(Path.DirectorySeparatorChar, '/');
+					fileParams.Files[key] = new FileInfo(sourceFile);
+					fileParams.ExportPatterns[key] = translation;
 				}
 			}
 		}

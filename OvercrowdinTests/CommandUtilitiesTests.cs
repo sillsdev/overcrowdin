@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
+using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Overcrowdin;
@@ -22,7 +22,6 @@ namespace OvercrowdinTests
 			fileSys.Directory.CreateDirectory("john/quincy/doe");
 			fileSys.File.WriteAllText("test.txt", "contents");
 			fileSys.File.WriteAllText("jane/test.txt", "contents");
-			fileSys.File.WriteAllText("jane/doe/test.txt", "contents");
 			fileSys.File.WriteAllText("jane/doe/test.txt", "contents");
 			fileSys.File.WriteAllText("john/test.txt", "contents");
 			fileSys.File.WriteAllText("john/doe/test.txt", "contents");
@@ -52,16 +51,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/adams/test.txt");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 			}
 
-			Assert.Single(foundFiles);
-			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
+			Assert.Single(fileParams.Files);
+			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
 		}
 
 		[Fact]
@@ -69,16 +68,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/adams/*.txt");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 			}
 
-			Assert.Equal(2, foundFiles.Count);
-			var foundFilesArray = foundFiles.Values.Select(val => val.FullName).ToArray();
+			Assert.Equal(2, fileParams.Files.Count);
+			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
 			Assert.Contains(@"C:\john\quincy\adams\test.txt", foundFilesArray);
 			Assert.Contains(@"C:\john\quincy\adams\allonym.txt", foundFilesArray);
 		}
@@ -88,16 +87,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/**/*.txt");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 			}
 
-			Assert.Equal(6, foundFiles.Count);
-			var foundFilesArray = foundFiles.Values.Select(val => val.FullName).ToArray();
+			Assert.Equal(6, fileParams.Files.Count);
+			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
 			Assert.Contains(@"C:\john\test.txt", foundFilesArray);
 			Assert.Contains(@"C:\john\doe\test.txt", foundFilesArray);
 			Assert.Contains(@"C:\john\quincy\adams\allonym.txt", foundFilesArray);
@@ -109,15 +108,15 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/**/doe/*.txt");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 			}
 
-			Assert.Equal(3, foundFiles.Count);
+			Assert.Equal(3, fileParams.Files.Count);
 		}
 
 		[Fact(Skip = "not implemented")]
@@ -125,16 +124,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/*/*.txt");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 			}
 
-			Assert.Equal(3, foundFiles.Count);
-			var foundFilesArray = foundFiles.Values.Select(val => val.FullName).ToArray();
+			Assert.Equal(3, fileParams.Files.Count);
+			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
 			Assert.Contains(@"C:\john\quincy\adams\test.txt", foundFilesArray);
 			Assert.Contains(@"C:\john\quincy\adams\allonym.txt", foundFilesArray);
 			Assert.Contains(@"C:\john\quincy\doe\test.txt", foundFilesArray);
@@ -148,12 +147,12 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(sourceExpression);
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles));
+				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams));
 				Assert.Contains("Please submit a pull request", e.Message);
 				Assert.Contains(sourceExpression, e.Message);
 			}
@@ -165,12 +164,12 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(subPath, basePath);
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles));
+				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams));
 				Assert.Contains(subPath, e.Message);
 			}
 		}
@@ -180,19 +179,51 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("C:/jane/*.txt", @"C:\john");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				// DNF is helpful enough, and checking earlier is too complicated for such an unexpected error
-				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles));
+				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams));
 				Assert.Contains(@"C:\john\C:\jane", e.Message);
 			}
 		}
 
+		[Fact]
+		public void TranslationExportPatterns()
+		{
+			const string janePattern = "/l10n/%two_letters_code%/jane_doe/%original_file_name%";
+			const string johnPattern = "/l10n/%two_letters_code%/john/**/%file_name%.%two_letters_code%.%file_extension%";
+			var mockFileSystem = SetUpDirectoryStructure();
+			dynamic configJson = SetUpConfig("/jane/doe/*.txt");
+			var files = configJson.files;
+			files[0].translation = janePattern;
+			dynamic file = new JObject();
+			file.source = "/john/quincy/**/*.txt";
+			file.translation = johnPattern;
+			files.Add(file);
+			var fileParams = new UpdateFileParameters();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+			}
+
+			Assert.Equal(5, fileParams.Files.Count);
+			Assert.Equal(5, fileParams.ExportPatterns.Count);
+			foreach (var key in fileParams.Files.Keys)
+			{
+				Assert.Contains(key, fileParams.ExportPatterns.Keys);
+			}
+			Assert.Equal(janePattern, fileParams.ExportPatterns["jane/doe/test.txt"]);
+			Assert.Equal(johnPattern, fileParams.ExportPatterns["john/quincy/adams/allonym.txt"]);
+			Assert.Equal(johnPattern, fileParams.ExportPatterns["john/quincy/doe/test.txt"]);
+		}
+
 		[Theory]
-		[InlineData(".", @"jane\doe\test.txt")]
+		[InlineData(".", "jane/doe/test.txt")]
 		[InlineData(@"jane\doe", "test.txt")]
 		[InlineData(@"jane\doe\", "test.txt")]
 		[InlineData(@"jane/doe/", "test.txt")]
@@ -202,17 +233,17 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(subPath, basePath);
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 			}
 
-			Assert.Single(foundFiles);
-			Assert.Equal(@"C:\jane\doe\test.txt", foundFiles.Values.First().FullName);
-			Assert.Equal(subPath, foundFiles.Keys.First());
+			Assert.Single(fileParams.Files);
+			Assert.Equal(@"C:\jane\doe\test.txt", fileParams.Files.Values.First().FullName);
+			Assert.Equal(subPath, fileParams.Files.Keys.First());
 		}
 
 		[Fact]
@@ -220,7 +251,7 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("/adams/test.txt", "C:/john/quincy");
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
@@ -229,7 +260,7 @@ namespace OvercrowdinTests
 				try
 				{
 					mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 				}
 				finally
 				{
@@ -237,9 +268,9 @@ namespace OvercrowdinTests
 				}
 			}
 
-			Assert.Single(foundFiles);
-			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
-			Assert.Equal(@"adams\test.txt", foundFiles.Keys.First());
+			Assert.Single(fileParams.Files);
+			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
+			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
 		}
 
 		[Theory]
@@ -249,7 +280,7 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("/adams/test.txt", relativeBasePath);
-			var foundFiles = new Dictionary<string, FileInfo>();
+			var fileParams = new AddFileParameters();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
@@ -258,7 +289,7 @@ namespace OvercrowdinTests
 				try
 				{
 					mockFileSystem.Directory.SetCurrentDirectory(currentDir);
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, foundFiles);
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
 				}
 				finally
 				{
@@ -266,9 +297,9 @@ namespace OvercrowdinTests
 				}
 			}
 
-			Assert.Single(foundFiles);
-			Assert.Equal(@"C:\john\quincy\adams\test.txt", foundFiles.Values.First().FullName);
-			Assert.Equal(@"adams\test.txt", foundFiles.Keys.First());
+			Assert.Single(fileParams.Files);
+			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
+			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
 		}
 	}
 }

@@ -16,7 +16,7 @@
     <PackageProjectUrl>https://github.com/sillsdev/overcrowdin</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sillsdev/overcrowdin</RepositoryUrl>
     <PackageIcon>images/icon.png</PackageIcon>
-    <PackageTags>.NET Core;l10n;localization;cli</PackageTags>
+    <PackageTags>.NET Core;l10n;localisation;localization;cli</PackageTags>
     <PackageReleaseNotes>First version includes support for generating a configuration file from a crowdin project, adding source files to crowdin, updating source files in crowdin and downloading translation zip files from crowdin.</PackageReleaseNotes>
   </PropertyGroup>
 
@@ -33,7 +33,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.6.0" />
-    <PackageReference Include="Crowdin.Api" Version="1.0.1" />
+    <PackageReference Include="Crowdin.Api" Version="1.0.2" />
     <PackageReference Include="GitVersionTask" Version="5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="2.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="2.1.1" />
