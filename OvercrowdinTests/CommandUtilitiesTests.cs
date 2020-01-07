@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
@@ -56,7 +57,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParams.Files);
@@ -73,7 +74,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Equal(2, fileParams.Files.Count);
@@ -92,7 +93,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Equal(6, fileParams.Files.Count);
@@ -113,7 +114,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Equal(3, fileParams.Files.Count);
@@ -129,7 +130,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Equal(3, fileParams.Files.Count);
@@ -152,7 +153,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams));
+				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>()));
 				Assert.Contains("Please submit a pull request", e.Message);
 				Assert.Contains(sourceExpression, e.Message);
 			}
@@ -169,7 +170,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams));
+				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>()));
 				Assert.Contains(subPath, e.Message);
 			}
 		}
@@ -185,7 +186,7 @@ namespace OvercrowdinTests
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				// DNF is helpful enough, and checking earlier is too complicated for such an unexpected error
-				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams));
+				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>()));
 				Assert.Contains(@"C:\john\C:\jane", e.Message);
 			}
 		}
@@ -208,7 +209,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Equal(5, fileParams.Files.Count);
@@ -238,7 +239,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParams.Files);
@@ -260,7 +261,7 @@ namespace OvercrowdinTests
 				try
 				{
 					mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 				}
 				finally
 				{
@@ -289,7 +290,7 @@ namespace OvercrowdinTests
 				try
 				{
 					mockFileSystem.Directory.SetCurrentDirectory(currentDir);
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams);
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
 				}
 				finally
 				{
@@ -300,6 +301,25 @@ namespace OvercrowdinTests
 			Assert.Single(fileParams.Files);
 			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
 			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
+		}
+
+		[Fact]
+		public void NecessaryFoldersCreated()
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			var configJson = SetUpConfig("john/quincy/**/*.txt");
+			var foldersToCreate = new SortedSet<string>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, new AddFileParameters(), foldersToCreate);
+			}
+
+			Assert.Equal(3, foldersToCreate.Count);
+			Assert.Contains("john/quincy", foldersToCreate);
+			Assert.Contains("john/quincy/adams", foldersToCreate);
+			Assert.Contains("john/quincy/doe", foldersToCreate);
 		}
 	}
 }

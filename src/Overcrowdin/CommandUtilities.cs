@@ -13,7 +13,7 @@ namespace Overcrowdin
 		private const string UnsupportedSyntaxX =
 			"The specified source syntax is not supported. Please submit a pull request to help us support ";
 
-		public static void GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs, FileParameters fileParams)
+		public static void GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs, FileParameters fileParams, ISet<string> folders)
 		{
 			if (fileParams.Files == null)
 			{
@@ -26,11 +26,16 @@ namespace Overcrowdin
 				foreach (var file in opts.Files)
 				{
 					fileParams.Files[file] = new FileInfo(file); // TODO (Hasso) 2019.12: normalize keys: no C:\, Unix dir separators, (filename only?)
+					var dir = Path.GetDirectoryName(file);
+					if (!string.IsNullOrEmpty(dir))
+					{
+						folders.Add(dir);
+					}
 				}
 			}
 			else
 			{
-				GetFilesFromConfiguration(config, fs, fileParams);
+				GetFilesFromConfiguration(config, fs, fileParams, folders);
 			}
 		}
 
@@ -42,7 +47,7 @@ namespace Overcrowdin
 		///  }
 		/// ]
 		/// </summary>
-		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, FileParameters fileParams)
+		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, FileParameters fileParams, ISet<string> folders)
 		{
 			if (fileParams.Files == null)
 			{
@@ -100,6 +105,12 @@ namespace Overcrowdin
 					var key = sourceFile.Substring(basePathLength).Replace(Path.DirectorySeparatorChar, '/');
 					fileParams.Files[key] = new FileInfo(sourceFile);
 					fileParams.ExportPatterns[key] = translation;
+
+					var dir = Path.GetDirectoryName(key);
+					if (!string.IsNullOrEmpty(dir))
+					{
+						folders.Add(dir.Replace(Path.DirectorySeparatorChar, '/'));
+					}
 				}
 			}
 		}

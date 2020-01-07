@@ -31,7 +31,7 @@ namespace Overcrowdin
 			{
 				var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
 				var updateFileParameters = new UpdateFileParameters();
-				CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParameters);
+				CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParameters, new SortedSet<string>());
 				Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
 				var crowdinResult = await crowdin.UpdateFile(projectId,
 					projectCredentials, updateFileParameters);

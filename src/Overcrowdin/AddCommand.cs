@@ -26,10 +26,15 @@ namespace Overcrowdin
 			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
 			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
 			var addFileParams = new AddFileParameters();
-			CommandUtilities.GetFileList(config, opts, fs, addFileParams);
+			var foldersToCreate = new SortedSet<string>();
+			CommandUtilities.GetFileList(config, opts, fs, addFileParams, foldersToCreate);
+			if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate, fs))
+			{
+				gate.Set();
+				return 1;
+			}
 			Console.WriteLine("Adding {0} files...", addFileParams.Files.Count);
-			var result = await crowdin.AddFile(projectId,
-				projectCredentials, addFileParams);
+			var result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
 			if (result.IsSuccessStatusCode)
 			{
 				Console.WriteLine("Finished Adding files.");
