@@ -28,9 +28,10 @@ namespace OvercrowdinTests
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
-			// Only setup the expected call to AddFile (any calls without the expected file params will return null)
+			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
 			_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable();
 			var gate = new AutoResetEvent(false);
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } },
 				gate, mockFileSystem);
@@ -62,15 +63,43 @@ namespace OvercrowdinTests
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
-				// Only setup the expected call to AddFile (any calls without the expected file params will return null)
+				// Set up only the expected call to AddFile (any calls without the expected file params will return null)
 				_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
-					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable();
 				var gate = new AutoResetEvent(false);
 				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), gate, mockFileSystem);
 				gate.WaitOne();
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}
+		}
+
+		// ENHANCE (Hasso) 2020.01: verify that the folder is created *before* the file is added
+		[Fact]
+		public async void AddCommandCreatesFolders()
+		{
+			var mockFileSystem = new MockFileSystem();
+			var pathParts = new[] {"relative", "path"};
+			const string inputFileName = "relative/path/test.txt";
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string projectId = "testcrowdinproject";
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
+			// Set up only the expected calls (any unexpected calls will return null)
+			_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable("should have added file");
+			_mockClient.Setup(x => x.CreateFolder(projectId, It.IsAny<ProjectCredentials>(), It.Is<CreateFolderParameters>(fp => fp.Name.StartsWith(pathParts[0]))))
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable("should have created folder");
+			var gate = new AutoResetEvent(false);
+			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } },
+				gate, mockFileSystem);
+			gate.WaitOne();
+			_mockClient.Verify();
+			Assert.Equal(0, result);
 		}
 	}
 }
