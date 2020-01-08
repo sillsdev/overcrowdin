@@ -322,5 +322,68 @@ namespace OvercrowdinTests
 			Assert.Contains("john/quincy/adams", foldersToCreate);
 			Assert.Contains("john/quincy/doe", foldersToCreate);
 		}
+
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public void BatchesFilesInTwenties(bool testWithExportPatterns)
+		{
+			const int fileCount = CommandUtilities.BatchSize + 1;
+			var files = new Dictionary<string, FileInfo>();
+			var exportPatterns = new Dictionary<string, string>();
+			var fileParams = new AddFileParameters
+			{
+				Files = files,
+				ExportPatterns = exportPatterns
+			};
+			for (var i = 0; i < fileCount; i++)
+			{
+				var key = i.ToString();
+				files[key] = new FileInfo($"{i}.txt");
+				if (testWithExportPatterns)
+				{
+					exportPatterns[key] = $"%locale%/{i}.txt";
+				}
+			}
+
+			var result = CommandUtilities.BatchFiles(fileParams);
+
+			Assert.Equal(2, result.Length);
+			Assert.Equal(CommandUtilities.BatchSize, result[0].Files.Count);
+			Assert.Single(result[1].Files);
+			// Getting an aggregate set by adding the file from result[1] to result[0] would be easier, but changing the data seems unprincipled.
+			var allBatchedFiles = result[0].Files.Concat(result[1].Files).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			for (var i = 0; i < fileCount; i++)
+			{
+				var key = i.ToString();
+				Assert.Equal(files[key], allBatchedFiles[key]);
+			}
+
+			if (!testWithExportPatterns)
+			{
+				Assert.Empty(result[0].ExportPatterns);
+				Assert.Empty(result[1].ExportPatterns);
+				return;
+			}
+			Assert.Equal(CommandUtilities.BatchSize, result[0].ExportPatterns.Count);
+			Assert.Single(result[1].ExportPatterns);
+			var allBatchedExportPatterns = result[0].ExportPatterns.Concat(result[1].ExportPatterns).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			for (var i = 0; i < fileCount; i++)
+			{
+				var key = i.ToString();
+				Assert.Equal(exportPatterns[key], allBatchedExportPatterns[key]);
+			}
+		}
+
+		[Fact]
+		public void BatchEmptyFilesListDoesntCrash()
+		{
+			var fileParams = new AddFileParameters { Files = new Dictionary<string, FileInfo>() };
+
+			var result = CommandUtilities.BatchFiles(fileParams);
+
+			Assert.Single(result);
+			Assert.Empty(result.First().Files);
+		}
 	}
 }
