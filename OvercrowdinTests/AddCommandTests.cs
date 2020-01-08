@@ -75,6 +75,50 @@ namespace OvercrowdinTests
 			}
 		}
 
+		[Fact]
+		public async void AddCommandBatchesManyFiles()
+		{
+			const int fileCount = CommandUtilities.BatchSize + 2;
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string projectId = "testcrowdinproject";
+			var mockFileSystem = new MockFileSystem();
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			for (var i = 0; i < fileCount; i++)
+			{
+				mockFileSystem.File.WriteAllText($"file{i}.txt", "mock contents");
+			}
+
+			dynamic configJson = new JObject();
+			configJson.project_id = projectId;
+			configJson.api_key_env = apiKeyEnvVar;
+			configJson.base_path = ".";
+			dynamic file = new JObject();
+			file.source = "*.txt";
+			file.translation = "/l10n/%two_letters_code%/%original_file_name%";
+			var files = new JArray {file};
+			configJson.files = files;
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+
+				// Set up only the expected calls to AddFile (any calls without the expected file params will return null)
+				_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<AddFileParameters>(fp => fp.Files.Count == CommandUtilities.BatchSize && fp.ExportPatterns.Count == CommandUtilities.BatchSize)))
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable("first (full) batch");
+				_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<AddFileParameters>(fp => fp.Files.Count == 2 && fp.ExportPatterns.Count == 2)))
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable("second batch");
+				var gate = new AutoResetEvent(false);
+				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), gate, mockFileSystem);
+				gate.WaitOne();
+				_mockClient.Verify();
+				Assert.Equal(0, result);
+			}
+		}
+
 		// ENHANCE (Hasso) 2020.01: verify that the folder is created *before* the file is added
 		[Fact]
 		public async void AddCommandCreatesFolders()

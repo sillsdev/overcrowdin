@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -28,13 +29,29 @@ namespace Overcrowdin
 			var addFileParams = new AddFileParameters();
 			var foldersToCreate = new SortedSet<string>();
 			CommandUtilities.GetFileList(config, opts, fs, addFileParams, foldersToCreate);
+
+			// create folders
 			if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate, fs))
 			{
 				gate.Set();
 				return 1;
 			}
-			Console.WriteLine("Adding {0} files...", addFileParams.Files.Count);
-			var result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
+
+			// Group files into batches
+			var fileBatches = CommandUtilities.BatchFiles(addFileParams);
+
+			// Add files to Crowdin
+			var fileCount = addFileParams.Files.Count;
+			Console.WriteLine($"Adding {fileCount} files...");
+			HttpResponseMessage result;
+			var i = 0;
+			do
+			{
+				addFileParams.Files = fileBatches[i].Files;
+				addFileParams.ExportPatterns = fileBatches[i].ExportPatterns;
+				result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
+			} while (++i < fileBatches.Length && result.IsSuccessStatusCode);
+
 			if (result.IsSuccessStatusCode)
 			{
 				Console.WriteLine("Finished Adding files.");
@@ -47,6 +64,11 @@ namespace Overcrowdin
 			else
 			{
 				Console.WriteLine("Failure adding files.");
+				if (i > 1)
+				{
+					var successFileCount = (i - 1) * CommandUtilities.BatchSize;
+					Console.WriteLine($"Successfully added {successFileCount} files. The remaining {fileCount - successFileCount} were not added.");
+				}
 				if (opts.Verbose)
 				{
 					var error = await result.Content.ReadAsStringAsync();
