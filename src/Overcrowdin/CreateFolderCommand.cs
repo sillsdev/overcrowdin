@@ -64,12 +64,13 @@ namespace Overcrowdin
 			{
 				if (result.StatusCode == HttpStatusCode.InternalServerError)
 				{
+					// ENHANCE (Hasso) 2020.01: Extracting error codes could be refactored into a method for other clients
 					using (var xmlReader = XmlReader.Create(await result.Content.ReadAsStreamAsync()))
 					{
 						if (_errorSerializer.CanDeserialize(xmlReader))
 						{
 							var error = (Error)_errorSerializer.Deserialize(xmlReader);
-							if (error.Code == (int) CrowdinErrorCodes.DirectoryAlreadyExists)
+							if (error.Code == (int) CrowdinErrorCode.DirectoryAlreadyExists)
 							{
 								if (opts.Verbose)
 								{

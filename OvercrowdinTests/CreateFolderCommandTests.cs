@@ -56,7 +56,7 @@ namespace OvercrowdinTests
 			{
 				Content = new StringContent($@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <error>
-  <code>{(int) CrowdinErrorCodes.DirectoryAlreadyExists}</code>
+  <code>{(int) CrowdinErrorCode.DirectoryAlreadyExists}</code>
   <message>Directory with such name already exists</message>
 </error>")
 			};
@@ -74,7 +74,7 @@ namespace OvercrowdinTests
 		public async void CreateFolderWithBadCharactersFails()
 		{
 			var mockFileSystem = new MockFileSystem();
-			const string newFolderName = "testDir";
+			const string newFolderName = ">bad*Dir?";
 			const string apiKeyEnvVar = "KEYEXISTS";
 			const string projectId = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
@@ -84,7 +84,7 @@ namespace OvercrowdinTests
 			{
 				Content = new StringContent($@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <error>
-  <code>{(int) CrowdinErrorCodes.DirectoryNameHasInvalidCharacters}</code>
+  <code>{(int) CrowdinErrorCode.DirectoryNameHasInvalidCharacters}</code>
   <message>Directory with such name already exists</message>
 </error>")
 			};
