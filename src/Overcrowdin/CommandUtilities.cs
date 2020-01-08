@@ -136,5 +136,41 @@ namespace Overcrowdin
 			// On Windows, each Path call normalizes to '\', but we are normalizing to '/' for cross-platform compatibility.
 			return Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
 		}
+
+		public const int BatchSize = 20;
+
+		public static FileParameters[] BatchFiles(FileParameters allFiles)
+		{
+			if (allFiles.Files.Count <= BatchSize)
+			{
+				return new[] {allFiles};
+			}
+
+			var keys = allFiles.Files.Keys.ToArray();
+			var batchCount = (keys.Length - 1) / BatchSize + 1; // if there is any remainder, round up
+			var batchedFiles = new FileParameters[batchCount];
+			for (var i = 0; i < batchCount; i++)
+			{
+				// choosing UpdateFileParameters because FileParameters is abstract and creating a new subclass seems like too much extra code.
+				// UpdateFileParameters contains the NewNames list that will need to be batched
+				batchedFiles[i] = new UpdateFileParameters
+				{
+					Files = new Dictionary<string, FileInfo>(),
+					ExportPatterns = new Dictionary<string, string>()
+				};
+			}
+			for (var i = 0; i < keys.Length; i++)
+			{
+				var key = keys[i];
+				var currentBatch = batchedFiles[i / BatchSize];
+				currentBatch.Files[key] = allFiles.Files[key];
+				if (allFiles.ExportPatterns.TryGetValue(key, out var exportPattern))
+				{
+					currentBatch.ExportPatterns[key] = exportPattern;
+				}
+			}
+
+			return batchedFiles;
+		}
 	}
 }
