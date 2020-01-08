@@ -304,7 +304,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public void NecessaryFoldersCreated()
+		public void FindsContainingFolders()
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/**/*.txt");
@@ -313,10 +313,11 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, new AddFileParameters(), foldersToCreate);
+				CommandUtilities.GetFileList(config, new AddCommand.Options(), mockFileSystem, new AddFileParameters(), foldersToCreate);
 			}
 
-			Assert.Equal(3, foldersToCreate.Count);
+			Assert.Equal(4, foldersToCreate.Count);
+			Assert.Contains("john", foldersToCreate);
 			Assert.Contains("john/quincy", foldersToCreate);
 			Assert.Contains("john/quincy/adams", foldersToCreate);
 			Assert.Contains("john/quincy/doe", foldersToCreate);
