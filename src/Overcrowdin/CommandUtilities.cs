@@ -13,7 +13,7 @@ namespace Overcrowdin
 		private const string UnsupportedSyntaxX =
 			"The specified source syntax is not supported. Please submit a pull request to help us support ";
 
-		public static void GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs, FileParameters fileParams, ISet<string> folders)
+		public static void GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs, FileParameters fileParams, SortedSet<string> folders)
 		{
 			if (fileParams.Files == null)
 			{
@@ -25,8 +25,8 @@ namespace Overcrowdin
 			{
 				foreach (var file in opts.Files)
 				{
-					fileParams.Files[file] = new FileInfo(file); // TODO (Hasso) 2019.12: normalize keys: no C:\, Unix dir separators, (filename only?)
-					var dir = Path.GetDirectoryName(file);
+					fileParams.Files[file.Replace(Path.DirectorySeparatorChar, '/')] = new FileInfo(file); // TODO (Hasso) 2019.12: normalize keys: no C:\
+					var dir = GetNormalizedParentFolder(file);
 					if (!string.IsNullOrEmpty(dir))
 					{
 						folders.Add(dir);
@@ -37,6 +37,8 @@ namespace Overcrowdin
 			{
 				GetFilesFromConfiguration(config, fs, fileParams, folders);
 			}
+
+			AddParentFolders(folders);
 		}
 
 		/// <summary>Read from configuration files section that resembles:
@@ -47,7 +49,7 @@ namespace Overcrowdin
 		///  }
 		/// ]
 		/// </summary>
-		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, FileParameters fileParams, ISet<string> folders)
+		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, FileParameters fileParams, SortedSet<string> folders)
 		{
 			if (fileParams.Files == null)
 			{
@@ -106,13 +108,33 @@ namespace Overcrowdin
 					fileParams.Files[key] = new FileInfo(sourceFile);
 					fileParams.ExportPatterns[key] = translation;
 
-					var dir = Path.GetDirectoryName(key);
+					var dir = GetNormalizedParentFolder(key);
 					if (!string.IsNullOrEmpty(dir))
 					{
-						folders.Add(dir.Replace(Path.DirectorySeparatorChar, '/'));
+						folders.Add(dir);
 					}
 				}
 			}
+		}
+
+		// ENHANCE (Hasso) 2020.01: optimize for mostly-full directory structures?
+		private static void AddParentFolders(ISet<string> folders)
+		{
+			foreach (var folder in folders.ToArray())
+			{
+				var superFolder = GetNormalizedParentFolder(folder);
+				while (!string.IsNullOrEmpty(superFolder))
+				{
+					folders.Add(superFolder);
+					superFolder = GetNormalizedParentFolder(superFolder);
+				}
+			}
+		}
+
+		private static string GetNormalizedParentFolder(string path)
+		{
+			// On Windows, each Path call normalizes to '\', but we are normalizing to '/' for cross-platform compatibility.
+			return Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
 		}
 	}
 }
