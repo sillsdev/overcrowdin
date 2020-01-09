@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -32,9 +33,21 @@ namespace Overcrowdin
 				var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
 				var updateFileParameters = new UpdateFileParameters();
 				CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParameters, new SortedSet<string>());
+
+				// Group files into batches
+				var fileBatches = CommandUtilities.BatchFiles(updateFileParameters);
+
 				Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
-				var crowdinResult = await crowdin.UpdateFile(projectId,
-					projectCredentials, updateFileParameters);
+				HttpResponseMessage crowdinResult;
+				var i = 0;
+				do
+				{
+					updateFileParameters.Files = fileBatches[i].Files;
+					updateFileParameters.ExportPatterns = fileBatches[i].ExportPatterns;
+					crowdinResult = await crowdin.UpdateFile(projectId, projectCredentials, updateFileParameters);
+				} while (++i < fileBatches.Length && crowdinResult.IsSuccessStatusCode);
+
+				// Give results
 				if (crowdinResult.IsSuccessStatusCode)
 				{
 					Console.WriteLine("Finished Updating files.");
@@ -47,6 +60,11 @@ namespace Overcrowdin
 				else
 				{
 					Console.WriteLine("Failure updating files.");
+					// A problem file does not cause Crowdin to roll back a batch. Alert the user if some files may have been updated.
+					if (i > 1 || updateFileParameters.Files.Count > 1)
+					{
+						Console.WriteLine("Some files may have been updated.");
+					}
 					if (opts.Verbose)
 					{
 						string error = await crowdinResult.Content.ReadAsStringAsync();
