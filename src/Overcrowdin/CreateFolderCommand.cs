@@ -28,20 +28,20 @@ namespace Overcrowdin
 			}
 
 			Console.WriteLine("Creating {0} folders...", folders.Count);
+			var crowdin = CrowdinCommand.GetClient();
 			using (var foldersE = folders.GetEnumerator())
 			{
 				var status = 0;
 				while (status == 0 && foldersE.MoveNext())
 				{
-					status = await CreateFolderInCrowdin(config, opts, foldersE.Current, fs);
+					status = await CreateFolderInCrowdin(crowdin, config, opts, foldersE.Current, fs);
 				}
 				return status;
 			}
 		}
 
-		public static async Task<int> CreateFolderInCrowdin(IConfiguration config, GlobalOptions opts, string folder, IFileSystem fs)
+		internal static async Task<int> CreateFolderInCrowdin(ICrowdinClient crowdin, IConfiguration config, GlobalOptions opts, string folder, IFileSystem fs)
 		{
-			var crowdin = CrowdinCommand.GetClient();
 			var projectId = config["project_identifier"];
 			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
 			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
