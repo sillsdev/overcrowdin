@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
@@ -20,6 +19,7 @@ namespace OvercrowdinTests
 	public class UpdateCommandTests : CrowdinApiTestBase
 	{
 		[Fact]
+		// REVIEW (Hasso) 2020.01: should we be checking the same for AddFiles and other methods? Should this check be centralized?
 		public async void MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
@@ -29,6 +29,7 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
 			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
+			// REVIEW (Hasso) 2020.01: I think, by not setting up any calls, we see a different failure than "missing API Key
 			var gate = new AutoResetEvent(false);
 			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } },
 				gate, mockFileSystem.FileSystem);
@@ -47,9 +48,10 @@ namespace OvercrowdinTests
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
-			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
+			// Set up only the expected call to UpdateFile (any calls without the expected file params will return null)
 			_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable();
 			var gate = new AutoResetEvent(false);
 			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } },
 				gate, mockFileSystem);
@@ -82,9 +84,55 @@ namespace OvercrowdinTests
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
-				// Set up only the expected call to AddFile (any calls without the expected file params will return null)
+				// Set up only the expected call to UpdateFile (any calls without the expected file params will return null)
 				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
-					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable();
+				var gate = new AutoResetEvent(false);
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), gate, mockFileSystem);
+				gate.WaitOne();
+				_mockClient.Verify();
+				Assert.Equal(0, result);
+			}
+		}
+
+		[Fact]
+		public async void UpdateCommandBatchesManyFiles()
+		{
+			const int secondBatchSize = 2;
+			const int fileCount = CommandUtilities.BatchSize + secondBatchSize;
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string projectId = "testcrowdinproject";
+			var mockFileSystem = new MockFileSystem();
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			for (var i = 0; i < fileCount; i++)
+			{
+				mockFileSystem.File.WriteAllText($"file{i}.txt", "mock contents");
+			}
+
+			dynamic configJson = new JObject();
+			configJson.project_id = projectId;
+			configJson.api_key_env = apiKeyEnvVar;
+			configJson.base_path = ".";
+			dynamic file = new JObject();
+			file.source = "*.txt";
+			file.translation = "/l10n/%two_letters_code%/%original_file_name%";
+			var files = new JArray { file };
+			configJson.files = files;
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+
+				// Set up only the expected calls to AddFile (any calls without the expected file params will return null)
+				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<UpdateFileParameters>(fp => fp.Files.Count == CommandUtilities.BatchSize && fp.ExportPatterns.Count == CommandUtilities.BatchSize)))
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable("first (full) batch");
+				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<UpdateFileParameters>(fp => fp.Files.Count == secondBatchSize && fp.ExportPatterns.Count == secondBatchSize)))
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable("second batch");
 				var gate = new AutoResetEvent(false);
 				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), gate, mockFileSystem);
 				gate.WaitOne();
