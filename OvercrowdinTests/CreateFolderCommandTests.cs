@@ -37,7 +37,8 @@ namespace OvercrowdinTests
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
 			var opts = new GlobalOptions();
-			var result = await CreateFolderCommand.CreateFolderInCrowdin(_mockConfig.Object, opts, newFolderName, mockFileSystem);
+			var folders = new SortedSet<string> {newFolderName};
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -65,7 +66,8 @@ namespace OvercrowdinTests
 				.Returns(Task.FromResult(mockResult))
 				.Verifiable();
 			var opts = new GlobalOptions();
-			var result = await CreateFolderCommand.CreateFolderInCrowdin(_mockConfig.Object, opts, newFolderName, mockFileSystem);
+			var folders = new SortedSet<string> {newFolderName};
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -93,7 +95,8 @@ namespace OvercrowdinTests
 				.Returns(Task.FromResult(mockResult))
 				.Verifiable();
 			var opts = new GlobalOptions();
-			var result = await CreateFolderCommand.CreateFolderInCrowdin(_mockConfig.Object, opts, newFolderName, mockFileSystem);
+			var folders = new SortedSet<string> {newFolderName};
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(1, result);
 		}
