@@ -52,6 +52,7 @@ namespace Overcrowdin
 				result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
 			} while (++i < fileBatches.Length && result.IsSuccessStatusCode);
 
+			// Give results
 			if (result.IsSuccessStatusCode)
 			{
 				Console.WriteLine("Finished Adding files.");
