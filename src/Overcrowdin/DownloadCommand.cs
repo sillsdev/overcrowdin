@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Threading;
@@ -22,7 +21,7 @@ namespace Overcrowdin
 			[Option('e', Required = false, Default = false, HelpText = "Export all translations before downloading. This generates the .zip files on the Crowdin server.")]
 			public bool ExportFirst { get; set; }
 
-			[Option('f', Required = true, Default = false, HelpText = "Path and filename relative to the configured basepath for the zip file.")]
+			[Option('f', Required = true, HelpText = "Path and filename relative to the configured basepath for the zip file.")]
 			public string Filename { get; set; }
 		}
 
