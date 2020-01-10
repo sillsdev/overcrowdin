@@ -19,8 +19,8 @@ namespace Overcrowdin
 			[Option('l', Required = false, Default ="all", HelpText = "The language to download the translations for or 'all' to download for every language.")]
 			public string Language { get; set; }
 
-			[Option('e', Required = false, Default = false, HelpText = "Export all translations before downloading. " +
-				"This generates the .zip files on the Crowdin server. If false, the most-recently-exported translations will be downloaded")]
+			[Option('e', Required = false, Default = false, HelpText = "Export all translations before downloading. This generates the .zip files" +
+				"\non the Crowdin server. If false, the most-recently-exported translations will be downloaded.")]
 			public bool ExportFirst { get; set; }
 
 			[Option('f', Required = true, HelpText = "Path and filename relative to the configured basepath for the zip file.")]
@@ -42,10 +42,12 @@ namespace Overcrowdin
 			{
 				try
 				{
-					var exportResponse = opts.ExportFirst
-						? await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters())
-						: null;
-					if (exportResponse?.IsSuccessStatusCode ?? true)
+					dynamic exportResponse = new {IsSuccessStatusCode = true};
+					if (opts.ExportFirst)
+					{
+						exportResponse = await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters());
+					}
+					if (exportResponse.IsSuccessStatusCode)
 					{
 						var downloadResponse = await crowdin.DownloadTranslation(projectId,
 							projectCredentials, new DownloadTranslationParameters { Package = opts.Language });

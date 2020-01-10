@@ -7,7 +7,7 @@ namespace Overcrowdin
 	/// </summary>
 	public class GlobalOptions
 	{
-		[Option('v', HelpText = "Show verbose output")]
+		[Option('v', HelpText = "Show verbose output.")]
 		public bool Verbose { get; set; }
 	}
 }
