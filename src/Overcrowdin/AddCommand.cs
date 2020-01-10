@@ -52,6 +52,7 @@ namespace Overcrowdin
 				result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
 			} while (++i < fileBatches.Length && result.IsSuccessStatusCode);
 
+			// Give results
 			if (result.IsSuccessStatusCode)
 			{
 				Console.WriteLine("Finished Adding files.");
@@ -64,10 +65,16 @@ namespace Overcrowdin
 			else
 			{
 				Console.WriteLine("Failure adding files.");
+				// Crowdin adds all files before the problem file. There is no rollback.
+				// Alert the user to the potential state of the project in Crowdin.
 				if (i > 1)
 				{
 					var successFileCount = (i - 1) * CommandUtilities.BatchSize;
-					Console.WriteLine($"Successfully added {successFileCount} files. The remaining {fileCount - successFileCount} were not added.");
+					Console.WriteLine($"Successfully added at least {successFileCount} files.");
+				}
+				else if (fileCount > 1)
+				{
+					Console.WriteLine("Some files may have been added.");
 				}
 				if (opts.Verbose)
 				{
