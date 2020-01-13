@@ -12,7 +12,7 @@ namespace Overcrowdin
 		/// Because the async lambda functions return immediately we need a semaphore to make sure we wait for the
 		/// Crowdin response on any Crowdin api calls before we exit.
 		/// </summary>
-		static readonly AutoResetEvent Gate = new AutoResetEvent(false);
+		private static readonly AutoResetEvent Gate = new AutoResetEvent(false);
 
 		private static int Main(string[] args)
 		{
@@ -30,15 +30,21 @@ namespace Overcrowdin
 			int result = 1;
 			var parseResult = Parser.Default.ParseArguments<GenerateCommand.Options, UpdateCommand.Options, AddCommand.Options, DownloadCommand.Options>(args)
 				.WithParsed<GenerateCommand.Options>(async opts =>
-					{
-						result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, Gate, fileSystem);
-					})
+				{
+					result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, Gate, fileSystem);
+				})
 				.WithParsed<UpdateCommand.Options>(async opts =>
 				{
 					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, Gate, fileSystem);
 				})
-				.WithParsed<AddCommand.Options>(async opts => await AddCommand.AddFilesToCrowdin(config, opts, Gate, fileSystem))
-				.WithParsed<DownloadCommand.Options>(async opts => await DownloadCommand.DownloadFromCrowdin(config, opts, Gate, fileSystem))
+				.WithParsed<AddCommand.Options>(async opts =>
+				{
+					result = await AddCommand.AddFilesToCrowdin(config, opts, Gate, fileSystem);
+				})
+				.WithParsed<DownloadCommand.Options>(async opts =>
+				{
+					result = await DownloadCommand.DownloadFromCrowdin(config, opts, Gate, fileSystem);
+				})
 				.WithNotParsed(errs =>
 				{
 					Gate.Set();
