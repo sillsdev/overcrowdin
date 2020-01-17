@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Xml.Linq;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 
@@ -101,7 +102,7 @@ namespace Overcrowdin
 				}
 				var filePattern = Path.GetFileName(source);
 				var matchedFiles = fs.Directory.GetFiles(directory, filePattern, searchOption);
-				foreach (var sourceFile in matchedFiles)
+				foreach (var sourceFile in matchedFiles.Where(f => IsLocalizable(f, fs)))
 				{
 					// Key is the relative path with Unix directory separators
 					var key = sourceFile.Substring(basePathLength).Replace(Path.DirectorySeparatorChar, '/');
@@ -171,6 +172,37 @@ namespace Overcrowdin
 			}
 
 			return batchedFiles;
+		}
+
+		/// <summary>
+		/// Determines whether a file should be uploaded to Crowdin.
+		/// .resx files with no localizable data are not uploaded.
+		/// </summary>
+		public static bool IsLocalizable(string path, IFileSystem fs)
+		{
+			return !".resx".Equals(Path.GetExtension(path)) || HasLocalizableData(XDocument.Load(fs.File.OpenRead(path)));
+		}
+
+		/// <returns>true if the given resx document contains at least one localizable string</returns>
+		public static bool HasLocalizableData(XDocument resxDoc)
+		{
+			return resxDoc.Element("root")?.Elements("data").Any(HasLocalizableData) ?? false;
+		}
+
+		/// <returns>true if the given resx <c>data</c> element has a localizable string</returns>
+		public static bool HasLocalizableData(XElement elt)
+		{
+			var name = elt.Attribute("name")?.Value;
+			if (string.IsNullOrEmpty(name))
+				return false;
+			// Project resource strings do not have a '.' in their name, but WinForms dialog .resx files have a '.' in every name.
+			// The only localizable properties of WinForms components are Text, AccessibleName, and AccessibleDescription.
+			if (name.Contains('.') &&
+				!(name.EndsWith(".Text") || name.EndsWith(".AccessibleName") || name.EndsWith(".AccessibleDescription")))
+				return false;
+			if (string.IsNullOrWhiteSpace(elt.Element("value")?.Value))
+				return false;
+			return true;
 		}
 	}
 }
