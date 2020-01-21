@@ -224,6 +224,57 @@ namespace OvercrowdinTests
 			Assert.Equal(johnPattern, fileParams.ExportPatterns["john/quincy/doe/test.txt"]);
 		}
 
+		[Fact]
+		public void GetIntAsBool()
+		{
+			dynamic json = new JObject();
+			json.zero = 0;
+			json.one = 1;
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(json.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				Assert.False(CommandUtilities.GetIntAsBool(config, "zero"));
+				Assert.True(CommandUtilities.GetIntAsBool(config, "one"));
+				Assert.Null(CommandUtilities.GetIntAsBool(config, "not_specified"));
+			}
+		}
+
+		[Fact]
+		public void ExtraOptionsForXmlFiles()
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string fileName = "test.xml";
+			mockFileSystem.File.WriteAllText(fileName, "<br/>");
+			dynamic configJson = SetUpConfig(fileName);
+			var files = configJson.files;
+			files[0].translate_content = 0;
+			files[0].translate_attributes = 0;
+			files[0].content_segmentation = 0;
+			files[0].translatable_elements = new JArray {"//string[@txt]", "/cheese/wheel"};
+			var fileParams = new AddFileParameters();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+			}
+
+			Assert.Single(fileParams.Files);
+			Assert.False(fileParams.TranslateContent);
+			Assert.False(fileParams.TranslateAttributes);
+			//Assert.False(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
+			var te = fileParams.TranslatableElements.ToArray();
+			Assert.Equal(2, te.Length);
+			Assert.Contains("//string[@txt]", te);
+			Assert.Contains("/cheese/wheel", te);
+		}
+
+		[Fact]
+		public void ExtraOptionsForSpecificXmlFiles() // TODO
+		{
+		}
+
 		[Theory]
 		[InlineData(".", "jane/doe/test.txt")]
 		[InlineData(@"jane\doe", "test.txt")]

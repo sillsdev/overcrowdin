@@ -76,6 +76,24 @@ namespace Overcrowdin
 			var filesSection = config.GetSection("files");
 			foreach (IConfigurationSection section in filesSection.GetChildren())
 			{
+				if (fileParams is AddFileParameters addFileParams)
+				{
+					addFileParams.TranslateContent = GetIntAsBool(section, "translate_content");
+					addFileParams.TranslateAttributes = GetIntAsBool(section, "translate_attributes");
+					//addFileParams.ContentSegmentation = GetIntAsBool(section, "content_segmentation");
+					if (section.GetValue<int?>("content_segmentation") != null)
+					{
+						Console.WriteLine("Warning: the option content_segmentation is not yet supported by the crowdin-dotnet-client!");
+					}
+					if (section.GetValue<int?>("import_translations") != null)
+					{
+						Console.WriteLine("Warning: the option import_translations is not yet supported by overcrowdin!");
+					}
+
+					var translatableElements = section.GetSection("translatable_elements"); // TODO (Hasso) 2019.01
+					addFileParams.TranslatableElements = translatableElements.GetChildren().Select(te => te.Get<string>()).ToList();
+				}
+
 				var source = section.GetValue<string>("source");
 				var translation = section.GetValue<string>("translation");
 				// A leading directory separator char (permissible in source) causes Path.Combine to interpret the path as rooted,
@@ -116,6 +134,12 @@ namespace Overcrowdin
 					}
 				}
 			}
+		}
+
+		public static bool? GetIntAsBool(IConfiguration config, string key)
+		{
+			var val = config.GetValue<int?>(key);
+			return val == null ? (bool?) null : val != 0;
 		}
 
 		// ENHANCE (Hasso) 2020.01: optimize for mostly-full directory structures?
