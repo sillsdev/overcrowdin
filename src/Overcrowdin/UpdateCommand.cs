@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,21 +32,19 @@ namespace Overcrowdin
 			if (!string.IsNullOrEmpty(projectKey))
 			{
 				var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
-				var updateFileParameters = new UpdateFileParameters();
-				CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParameters, new SortedSet<string>());
+				var updateFileParametersList = new List<UpdateFileParameters>();
+				CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>());
 
-				// Group files into batches
-				var fileBatches = CommandUtilities.BatchFiles(updateFileParameters);
+				// TODO (Hasso) 2020.01: check for no files to update
 
-				Console.WriteLine("Updating {0} files...", updateFileParameters.Files.Count);
+				Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.Files.Count)} files...");
 				HttpResponseMessage crowdinResult;
 				var i = 0;
 				do
 				{
-					updateFileParameters.Files = fileBatches[i].Files;
-					updateFileParameters.ExportPatterns = fileBatches[i].ExportPatterns;
+					var updateFileParameters = updateFileParametersList[i];
 					crowdinResult = await crowdin.UpdateFile(projectId, projectCredentials, updateFileParameters);
-				} while (++i < fileBatches.Length && crowdinResult.IsSuccessStatusCode);
+				} while (++i < updateFileParametersList.Count && crowdinResult.IsSuccessStatusCode);
 
 				// Give results
 				if (crowdinResult.IsSuccessStatusCode)
@@ -61,7 +60,7 @@ namespace Overcrowdin
 				{
 					Console.WriteLine("Failure updating files.");
 					// A problem file does not cause Crowdin to roll back a batch. Alert the user if some files may have been updated.
-					if (i > 1 || updateFileParameters.Files.Count > 1)
+					if (i > 1 || updateFileParametersList[0].Files.Count > 1)
 					{
 						Console.WriteLine("Some files may have been updated.");
 					}

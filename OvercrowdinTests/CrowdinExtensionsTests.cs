@@ -6,7 +6,7 @@ using Xunit;
 
 namespace OvercrowdinTests
 {
-	public class ParamsExtensionsTests : CrowdinApiTestBase
+	public class CrowdinExtensionsTests : CrowdinApiTestBase
 	{
 		[Fact]
 		public void ShallowCloneAddFileParams()

@@ -14,16 +14,16 @@ namespace Overcrowdin
 		private const string UnsupportedSyntaxX =
 			"The specified source syntax is not supported. Please submit a pull request to help us support ";
 
-		public static void GetFileList(IConfiguration config, IFileOptions opts, IFileSystem fs, FileParameters fileParams, SortedSet<string> folders)
+		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
+			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
 		{
-			if (fileParams.Files == null)
-			{
-				fileParams.Files = new Dictionary<string, FileInfo>();
-			}
-
 			// handle files specified on the command line
 			if (opts.Files != null && opts.Files.Any())
 			{
+				var fileParams = new T
+				{
+					Files = new Dictionary<string, FileInfo>()
+				};
 				foreach (var file in opts.Files)
 				{
 					fileParams.Files[file.Replace(Path.DirectorySeparatorChar, '/')] = new FileInfo(file); // TODO (Hasso) 2019.12: normalize keys: no C:\
@@ -33,10 +33,11 @@ namespace Overcrowdin
 						folders.Add(dir);
 					}
 				}
+				fileParamsList.Add(fileParams);
 			}
 			else
 			{
-				GetFilesFromConfiguration(config, fs, fileParams, folders);
+				GetFilesFromConfiguration(config, fs, fileParamsList, folders);
 			}
 
 			AddParentFolders(folders);
@@ -50,17 +51,9 @@ namespace Overcrowdin
 		///  }
 		/// ]
 		/// </summary>
-		public static void GetFilesFromConfiguration(IConfiguration config, IFileSystem fs, FileParameters fileParams, SortedSet<string> folders)
+		public static void GetFilesFromConfiguration<T>(IConfiguration config, IFileSystem fs,
+			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
 		{
-			if (fileParams.Files == null)
-			{
-				fileParams.Files = new Dictionary<string, FileInfo>();
-			}
-			if (fileParams.ExportPatterns == null)
-			{
-				fileParams.ExportPatterns = new Dictionary<string, string>();
-			}
-
 			var basePath = config.GetValue<string>("base_path");
 			basePath = basePath.Equals(".")
 				? fs.Directory.GetCurrentDirectory()
@@ -76,6 +69,11 @@ namespace Overcrowdin
 			var filesSection = config.GetSection("files");
 			foreach (IConfigurationSection section in filesSection.GetChildren())
 			{
+				var fileParams = new T
+				{
+					Files = new Dictionary<string, FileInfo>(),
+					ExportPatterns = new Dictionary<string, string>()
+				};
 				if (fileParams is AddFileParameters addFileParams)
 				{
 					addFileParams.TranslateContent = GetIntAsBool(section, "translate_content");
@@ -133,6 +131,10 @@ namespace Overcrowdin
 						folders.Add(dir);
 					}
 				}
+				if (fileParams.Files.Any())
+				{
+					fileParamsList.AddRange(BatchFiles(fileParams));
+				}
 			}
 		}
 
@@ -164,7 +166,7 @@ namespace Overcrowdin
 
 		public const int BatchSize = 20;
 
-		public static FileParameters[] BatchFiles(FileParameters allFiles)
+		public static T[] BatchFiles<T>(T allFiles) where T : FileParameters, new()
 		{
 			if (allFiles.Files.Count <= BatchSize)
 			{
@@ -173,25 +175,38 @@ namespace Overcrowdin
 
 			var keys = allFiles.Files.Keys.ToArray();
 			var batchCount = (keys.Length - 1) / BatchSize + 1; // if there is any remainder, round up
-			var batchedFiles = new FileParameters[batchCount];
+			var batchedFiles = new T[batchCount];
 			for (var i = 0; i < batchCount; i++)
 			{
-				// choosing UpdateFileParameters because FileParameters is abstract and creating a new subclass seems like too much extra code.
-				// UpdateFileParameters contains the NewNames list that will need to be batched
-				batchedFiles[i] = new UpdateFileParameters
+				// TODO (Hasso) 2020.01: UpdateFileParameters contains the NewNames list that will need to be batched
+				batchedFiles[i] = allFiles.ShallowClone();
+				batchedFiles[i].Files = new Dictionary<string, FileInfo>();
+				batchedFiles[i].ExportPatterns = new Dictionary<string, string>();
+				batchedFiles[i].Titles = new Dictionary<string, string>();
+				if (batchedFiles[i] is UpdateFileParameters updateBatch)
 				{
-					Files = new Dictionary<string, FileInfo>(),
-					ExportPatterns = new Dictionary<string, string>()
-				};
+					updateBatch.NewNames = new Dictionary<string, string>();
+				}
 			}
 			for (var i = 0; i < keys.Length; i++)
 			{
 				var key = keys[i];
 				var currentBatch = batchedFiles[i / BatchSize];
 				currentBatch.Files[key] = allFiles.Files[key];
-				if (allFiles.ExportPatterns.TryGetValue(key, out var exportPattern))
+				if (allFiles.ExportPatterns != null && allFiles.ExportPatterns.TryGetValue(key, out var exportPattern))
 				{
 					currentBatch.ExportPatterns[key] = exportPattern;
+				}
+				if (allFiles.Titles != null && allFiles.Titles.TryGetValue(key, out var title))
+				{
+					currentBatch.Titles[key] = title;
+				}
+
+				var allNewNames = (allFiles as UpdateFileParameters)?.NewNames;
+				if (allNewNames != null && allNewNames.TryGetValue(key, out var newName))
+				{
+					// ReSharper disable once PossibleNullReferenceException - if allFiles is UpdateFileParameters, currentBatch is, too.
+					(currentBatch as UpdateFileParameters).NewNames[key] = newName;
 				}
 			}
 
