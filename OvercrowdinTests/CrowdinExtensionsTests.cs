@@ -43,16 +43,6 @@ namespace OvercrowdinTests
 				var destValue = property.GetValue(dest);
 				Assert.Equal(sourceValue, destValue);
 			}
-			//Assert.Equal(source.Branch, dest.Branch);
-			//Assert.Equal(source.EscapeQuotes, dest.EscapeQuotes);
-			//Assert.Equal(source.ExportPatterns, dest.ExportPatterns);
-			//Assert.Equal(source.Files, dest.Files);
-			//Assert.Equal(source.FirstLineContainsHeader, dest.FirstLineContainsHeader);
-			//Assert.Equal(source.ImportTranslations, dest.ImportTranslations);
-			//Assert.Equal(source.Scheme, dest.Scheme);
-			//Assert.Equal(source.Titles, dest.Titles);
-			//Assert.Equal(source.TranslatableElements, dest.TranslatableElements);
-			//Assert.Equal(source.TranslateAttributes, dest.TranslateAttributes);
 		}
 
 		[Fact]

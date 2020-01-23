@@ -474,7 +474,7 @@ namespace OvercrowdinTests
 					Branch = branchName
 				};
 			}
-			//var fileParams = new AddFileParameters
+
 			for (var i = 0; i < fileCount; i++)
 			{
 				var key = i.ToString();
