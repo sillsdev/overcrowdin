@@ -88,7 +88,7 @@ namespace Overcrowdin
 						Console.WriteLine("Warning: the option import_translations is not yet supported by overcrowdin!");
 					}
 
-					var translatableElements = section.GetSection("translatable_elements"); // TODO (Hasso) 2019.01
+					var translatableElements = section.GetSection("translatable_elements");
 					addFileParams.TranslatableElements = translatableElements.GetChildren().Select(te => te.Get<string>()).ToList();
 				}
 
@@ -178,7 +178,6 @@ namespace Overcrowdin
 			var batchedFiles = new T[batchCount];
 			for (var i = 0; i < batchCount; i++)
 			{
-				// TODO (Hasso) 2020.01: UpdateFileParameters contains the NewNames list that will need to be batched
 				batchedFiles[i] = allFiles.ShallowClone();
 				batchedFiles[i].Files = new Dictionary<string, FileInfo>();
 				batchedFiles[i].ExportPatterns = new Dictionary<string, string>();

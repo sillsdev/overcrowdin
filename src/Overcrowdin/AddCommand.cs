@@ -23,58 +23,77 @@ namespace Overcrowdin
 
 		public static async Task<int> AddFilesToCrowdin(IConfiguration config, Options opts, AutoResetEvent gate, IFileSystem fs)
 		{
-			var crowdin = CrowdinCommand.GetClient();
-			var projectId = config["project_identifier"];
-			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
-			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
-			var addFileParamsList = new List<AddFileParameters>();
-			var foldersToCreate = new SortedSet<string>();
-			CommandUtilities.GetFileList(config, opts, fs, addFileParamsList, foldersToCreate);
+			try
+			{
+				var crowdin = CrowdinCommand.GetClient();
+				var projectId = config["project_identifier"];
+				var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
 
-			// create folders
-			if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate, fs))
+				if (string.IsNullOrEmpty(projectKey))
+				{
+					Console.WriteLine($"Environment variable {config["api_key_env"]} did not contain the API Key for your Crowdin project.");
+					return 1;
+				}
+
+				var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
+				var addFileParamsList = new List<AddFileParameters>();
+				var foldersToCreate = new SortedSet<string>();
+				CommandUtilities.GetFileList(config, opts, fs, addFileParamsList, foldersToCreate);
+
+				if (!addFileParamsList.Any())
+				{
+					Console.WriteLine("No files to add.");
+					return 0;
+				}
+
+				// create folders
+				if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate, fs))
+				{
+					return 1;
+				}
+
+				// Add files to Crowdin
+				Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.Files.Count)} files...");
+				HttpResponseMessage result;
+				var i = 0;
+				do
+				{
+					var addFileParams = addFileParamsList[i];
+					result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
+				} while (++i < addFileParamsList.Count && result.IsSuccessStatusCode);
+
+				// Give results
+				if (result.IsSuccessStatusCode)
+				{
+					Console.WriteLine("Finished Adding files.");
+					if (opts.Verbose)
+					{
+						var info = await result.Content.ReadAsStringAsync();
+						Console.WriteLine(info);
+					}
+				}
+				else
+				{
+					Console.WriteLine("Failure adding files.");
+					// Crowdin adds all files before the problem file. There is no rollback.
+					// Alert the user to the potential state of the project in Crowdin.
+					if (i > 1 || addFileParamsList[0].Files.Count > 1)
+					{
+						Console.WriteLine("Some files may have been added.");
+					}
+
+					if (opts.Verbose)
+					{
+						var error = await result.Content.ReadAsStringAsync();
+						Console.WriteLine(error);
+					}
+				}
+				return result.IsSuccessStatusCode ? 0 : 1;
+			}
+			finally
 			{
 				gate.Set();
-				return 1;
 			}
-
-			// Add files to Crowdin
-			Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.Files.Count)} files...");
-			HttpResponseMessage result;
-			var i = 0;
-			do
-			{
-				var addFileParams = addFileParamsList[i];
-				result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
-			} while (++i < addFileParamsList.Count && result.IsSuccessStatusCode);
-
-			// Give results
-			if (result.IsSuccessStatusCode)
-			{
-				Console.WriteLine("Finished Adding files.");
-				if (opts.Verbose)
-				{
-					var info = await result.Content.ReadAsStringAsync();
-					Console.WriteLine(info);
-				}
-			}
-			else
-			{
-				Console.WriteLine("Failure adding files.");
-				// Crowdin adds all files before the problem file. There is no rollback.
-				// Alert the user to the potential state of the project in Crowdin.
-				if (i > 1 || addFileParamsList[0].Files.Count > 1)
-				{
-					Console.WriteLine("Some files may have been added.");
-				}
-				if (opts.Verbose)
-				{
-					var error = await result.Content.ReadAsStringAsync();
-					Console.WriteLine(error);
-				}
-			}
-			gate.Set();
-			return result.IsSuccessStatusCode ? 0 : 1;
 		}
 	}
 }

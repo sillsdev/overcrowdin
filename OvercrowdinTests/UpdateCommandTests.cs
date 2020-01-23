@@ -96,6 +96,36 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
+		public async void UpdateCommandWithConfigFileMatchingNoFiles()
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string inputFileName = "no-existe.txt";
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string projectId = "testcrowdinproject";
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+
+			dynamic configJson = new JObject();
+			configJson.project_id = projectId;
+			configJson.api_key_env = apiKeyEnvVar;
+			configJson.base_path = ".";
+			dynamic file = new JObject();
+			file.source = inputFileName;
+			var files = new JArray();
+			files.Add(file);
+			configJson.files = files;
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				var gate = new AutoResetEvent(false);
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), gate, mockFileSystem);
+				gate.WaitOne();
+				_mockClient.Verify();
+				Assert.Equal(0, result);
+			}
+		}
+
+		[Fact]
 		public async void UpdateCommandBatchesManyFiles()
 		{
 			const int secondBatchSize = 2;
