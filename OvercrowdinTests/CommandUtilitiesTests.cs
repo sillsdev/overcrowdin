@@ -111,7 +111,7 @@ namespace OvercrowdinTests
 			Assert.DoesNotContain(foundFilesArray, file => file.Contains("jane"));
 		}
 
-		[Fact(Skip = "not implemented")]
+		[Fact]
 		public void GlobsFindFilesRecursivelyInSpecifiedSubdirs()
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
@@ -126,10 +126,13 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Equal(3, fileParams.Files.Count);
+			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
+			Assert.Equal(2, fileParams.Files.Count);
+			Assert.Contains(@"C:\john\doe\test.txt", foundFilesArray);
+			Assert.Contains(@"C:\john\quincy\doe\test.txt", foundFilesArray);
 		}
 
-		[Fact(Skip = "not implemented")]
+		[Fact]
 		public void GlobsFindFilesInSiblingDirs()
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
@@ -152,26 +155,8 @@ namespace OvercrowdinTests
 		}
 
 		[Theory]
-		[InlineData("john/*/*.txt")]
-		[InlineData("**/quincy/**/*.txt")]
-		[InlineData("john/**/doe/*.txt")]
-		public void HelpfulErrorsForUnimplementedSyntax(string sourceExpression)
-		{
-			var mockFileSystem = SetUpDirectoryStructure();
-			var configJson = SetUpConfig(sourceExpression);
-			var fileParamsList = new List<AddFileParameters>();
-
-			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
-			{
-				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
-				Assert.Contains("Please submit a pull request", e.Message);
-				Assert.Contains(sourceExpression, e.Message);
-			}
-		}
-
-		[Theory]
 		[InlineData(@"C:\john", "../jane/*.txt")]
+		[InlineData(@"C:\john", "C:/jane/*.txt")]
 		public void HelpfulErrorsForUnsupportedPaths(string basePath, string subPath)
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
@@ -183,22 +168,6 @@ namespace OvercrowdinTests
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
 				Assert.Contains(subPath, e.Message);
-			}
-		}
-
-		[Fact]
-		public void HelpfulErrorsForAbsoluteSourcePaths()
-		{
-			var mockFileSystem = SetUpDirectoryStructure();
-			var configJson = SetUpConfig("C:/jane/*.txt", @"C:\john");
-			var fileParamsList = new List<AddFileParameters>();
-
-			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
-			{
-				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				// DNF is helpful enough, and checking earlier is too complicated for such an unexpected error
-				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
-				Assert.Contains(@"C:\john\C:\jane", e.Message);
 			}
 		}
 
@@ -341,16 +310,8 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var originalDir = mockFileSystem.Directory.GetCurrentDirectory();
-				try
-				{
-					mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
-				}
-				finally
-				{
-					mockFileSystem.Directory.SetCurrentDirectory(originalDir);
-				}
+				mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -372,16 +333,8 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var originalDir = mockFileSystem.Directory.GetCurrentDirectory();
-				try
-				{
-					mockFileSystem.Directory.SetCurrentDirectory(currentDir);
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
-				}
-				finally
-				{
-					mockFileSystem.Directory.SetCurrentDirectory(originalDir);
-				}
+				mockFileSystem.Directory.SetCurrentDirectory(currentDir);
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);

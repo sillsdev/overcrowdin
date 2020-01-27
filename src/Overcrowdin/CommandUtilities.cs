@@ -6,6 +6,7 @@ using System.Linq;
 using System.Xml.Linq;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileSystemGlobbing;
 
 namespace Overcrowdin
 {
@@ -57,18 +58,26 @@ namespace Overcrowdin
 			var basePath = config.GetValue<string>("base_path");
 			basePath = basePath.Equals(".")
 				? fs.Directory.GetCurrentDirectory()
-				// DirectoryInfo will normalize the path; Combine will determine whether to treat basePath as absolute.
-				: fs.DirectoryInfo.FromDirectoryName(Path.Combine(fs.Directory.GetCurrentDirectory(), basePath)).FullName;
-			var basePathLength = basePath.Length;
-			// The root directory (C:\ or /) contains a trailing path separator character; other paths do not; always include it in the length
-			if (!basePath.EndsWith(Path.DirectorySeparatorChar))
-			{
-				basePathLength++;
-			}
+				: Path.Combine(fs.Directory.GetCurrentDirectory(), basePath); // Combine will determine whether to treat basePath as absolute
+			var basePathInfo = fs.DirectoryInfo.FromDirectoryName(basePath);
+			basePath = basePathInfo.FullName; // normalize the path
+
+			var basePathInfoWrapper = new DirectoryInfoWrapper(basePathInfo);
 
 			var filesSection = config.GetSection("files");
 			foreach (IConfigurationSection section in filesSection.GetChildren())
 			{
+				var source = section.GetValue<string>("source");
+				var translation = section.GetValue<string>("translation");
+
+				// A leading directory separator char (permissible in source) causes Path.Combine to interpret the path as rooted,
+				// but the source path is always relative (to base_path), so trim leading directory separators.
+				source = source.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+				if (!fs.DirectoryInfo.FromDirectoryName(Path.Combine(basePath, source)).FullName.StartsWith(basePath))
+				{
+					throw new NotSupportedException($"All files must be within the base path. The following may not be: {source}");
+				}
+
 				var fileParams = new T
 				{
 					Files = new Dictionary<string, FileInfo>(),
@@ -92,37 +101,15 @@ namespace Overcrowdin
 					addFileParams.TranslatableElements = translatableElements.GetChildren().Select(te => te.Get<string>()).ToList();
 				}
 
-				var source = section.GetValue<string>("source");
-				var translation = section.GetValue<string>("translation");
-				// A leading directory separator char (permissible in source) causes Path.Combine to interpret the path as rooted,
-				// but the source path is always relative (to base_path), so use join here.
-				var directory = fs.DirectoryInfo.FromDirectoryName(Path.Join(basePath, Path.GetDirectoryName(source))).FullName;
-				var searchOption = SearchOption.TopDirectoryOnly;
-				if (!directory.StartsWith(basePath))
-				{
-					throw new NotSupportedException($"All files must be within the base path. The following may not be: {source}");
-				}
-				if (directory.Contains("***"))
-				{
-					throw new NotImplementedException(UnsupportedSyntaxX + source);
-				}
-				if (directory.EndsWith("**"))
-				{
-					// For now, we support recursion only at the end of the directory path. Other options are not worth our effort at this time.
-					directory = Path.GetDirectoryName(directory);
-					searchOption = SearchOption.AllDirectories;
-				}
-				if (directory.Contains('*'))
-				{
-					throw new NotImplementedException(UnsupportedSyntaxX + source);
-				}
-				var filePattern = Path.GetFileName(source);
-				var matchedFiles = fs.Directory.GetFiles(directory, filePattern, searchOption);
-				foreach (var sourceFile in matchedFiles.Where(f => IsLocalizable(f, fs)))
+				var matcher = new Matcher();
+				matcher.AddInclude(source);
+				var matches = matcher.Execute(basePathInfoWrapper);
+				foreach (var sourceFile in matches.Files.Select(match => match.Path).Where(f => IsLocalizable(f, fs)))
 				{
 					// Key is the relative path with Unix directory separators
-					var key = sourceFile.Substring(basePathLength).Replace(Path.DirectorySeparatorChar, '/');
-					fileParams.Files[key] = new FileInfo(sourceFile);
+					var key = sourceFile.Replace(Path.DirectorySeparatorChar, '/');
+					var path = Path.Combine(basePath, sourceFile).Replace(Path.DirectorySeparatorChar, '/');
+					fileParams.Files[key] = new FileInfo(path);
 					fileParams.ExportPatterns[key] = translation;
 
 					var dir = GetNormalizedParentFolder(key);
