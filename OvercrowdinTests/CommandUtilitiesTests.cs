@@ -53,14 +53,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/adams/test.txt");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
 			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
 		}
@@ -70,14 +72,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/adams/*.txt");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Equal(2, fileParams.Files.Count);
 			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
 			Assert.Contains(@"C:\john\quincy\adams\test.txt", foundFilesArray);
@@ -89,14 +93,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/**/*.txt");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Equal(6, fileParams.Files.Count);
 			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
 			Assert.Contains(@"C:\john\test.txt", foundFilesArray);
@@ -110,14 +116,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/**/doe/*.txt");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Equal(3, fileParams.Files.Count);
 		}
 
@@ -126,14 +134,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("john/quincy/*/*.txt");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Equal(3, fileParams.Files.Count);
 			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
 			Assert.Contains(@"C:\john\quincy\adams\test.txt", foundFilesArray);
@@ -149,12 +159,12 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(sourceExpression);
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>()));
+				var e = Assert.Throws<NotImplementedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
 				Assert.Contains("Please submit a pull request", e.Message);
 				Assert.Contains(sourceExpression, e.Message);
 			}
@@ -166,12 +176,12 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(subPath, basePath);
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>()));
+				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
 				Assert.Contains(subPath, e.Message);
 			}
 		}
@@ -181,13 +191,13 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("C:/jane/*.txt", @"C:\john");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				// DNF is helpful enough, and checking earlier is too complicated for such an unexpected error
-				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>()));
+				var e = Assert.Throws<DirectoryNotFoundException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
 				Assert.Contains(@"C:\john\C:\jane", e.Message);
 			}
 		}
@@ -205,23 +215,94 @@ namespace OvercrowdinTests
 			file.source = "/john/quincy/**/*.txt";
 			file.translation = johnPattern;
 			files.Add(file);
-			var fileParams = new UpdateFileParameters();
+			var fileParamsList = new List<UpdateFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
-			Assert.Equal(5, fileParams.Files.Count);
-			Assert.Equal(5, fileParams.ExportPatterns.Count);
-			foreach (var key in fileParams.Files.Keys)
+			Assert.Equal(2, fileParamsList.Count);
+			var janeFileParams = fileParamsList[0];
+			Assert.Single(janeFileParams.Files);
+			Assert.Single(janeFileParams.ExportPatterns);
+			Assert.Equal(janePattern, janeFileParams.ExportPatterns["jane/doe/test.txt"]);
+
+			var johnFileParams = fileParamsList[1];
+			Assert.Equal(4, johnFileParams.Files.Count);
+			Assert.Equal(4, johnFileParams.ExportPatterns.Count);
+			foreach (var key in johnFileParams.Files.Keys)
 			{
-				Assert.Contains(key, fileParams.ExportPatterns.Keys);
+				Assert.Equal(johnPattern, johnFileParams.ExportPatterns[key]);
 			}
-			Assert.Equal(janePattern, fileParams.ExportPatterns["jane/doe/test.txt"]);
-			Assert.Equal(johnPattern, fileParams.ExportPatterns["john/quincy/adams/allonym.txt"]);
-			Assert.Equal(johnPattern, fileParams.ExportPatterns["john/quincy/doe/test.txt"]);
+		}
+
+		[Fact]
+		public void GetIntAsBool()
+		{
+			dynamic json = new JObject();
+			json.zero = 0;
+			json.one = 1;
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(json.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				Assert.False(CommandUtilities.GetIntAsBool(config, "zero"));
+				Assert.True(CommandUtilities.GetIntAsBool(config, "one"));
+				Assert.Null(CommandUtilities.GetIntAsBool(config, "not_specified"));
+			}
+		}
+
+		[Fact]
+		public void AdditionalOptionsForXmlFiles()
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string fileName0 = "test.xml";
+			const string fileName1 = "tstB.xml";
+			const string trElt0 = "//string[@txt]";
+			const string trElt1a = "/cheese/wheel";
+			const string trElt1b = "/round[@round]";
+			mockFileSystem.File.WriteAllText(fileName0, "<br/>");
+			mockFileSystem.File.WriteAllText(fileName1, "<br/>");
+			dynamic configJson = SetUpConfig(fileName0);
+			var files = configJson.files;
+			files[0].translate_content = 0;
+			files[0].translate_attributes = 0;
+			files[0].content_segmentation = 0;
+			files[0].translatable_elements = new JArray {trElt0};
+			files.Add(new JObject());
+			files[1].source = fileName1;
+			files[1].translate_content = 1;
+			files[1].translate_attributes = 1;
+			files[1].content_segmentation = 1;
+			files[1].translatable_elements = new JArray {trElt1a, trElt1b};
+			var fileParamsList = new List<AddFileParameters>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+			}
+
+			Assert.Equal(2, fileParamsList.Count);
+			var fileParams = fileParamsList[0];
+			Assert.Single(fileParams.Files);
+			Assert.False(fileParams.TranslateContent);
+			Assert.False(fileParams.TranslateAttributes);
+			//Assert.False(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
+			var te = fileParams.TranslatableElements.ToArray();
+			Assert.Single(te);
+			Assert.Contains(trElt0, te);
+			fileParams = fileParamsList[1];
+			Assert.Single(fileParams.Files);
+			Assert.True(fileParams.TranslateContent);
+			Assert.True(fileParams.TranslateAttributes);
+			//Assert.True(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
+			te = fileParams.TranslatableElements.ToArray();
+			Assert.Equal(2, te.Length);
+			Assert.Contains(trElt1a, te);
+			Assert.Contains(trElt1b, te);
 		}
 
 		[Theory]
@@ -235,14 +316,16 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig(subPath, basePath);
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
 			Assert.Equal(@"C:\jane\doe\test.txt", fileParams.Files.Values.First().FullName);
 			Assert.Equal(subPath, fileParams.Files.Keys.First());
@@ -253,7 +336,7 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("/adams/test.txt", "C:/john/quincy");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
@@ -262,7 +345,7 @@ namespace OvercrowdinTests
 				try
 				{
 					mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 				}
 				finally
 				{
@@ -270,6 +353,8 @@ namespace OvercrowdinTests
 				}
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
 			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
 			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
@@ -282,7 +367,7 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = SetUpDirectoryStructure();
 			var configJson = SetUpConfig("/adams/test.txt", relativeBasePath);
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
@@ -291,7 +376,7 @@ namespace OvercrowdinTests
 				try
 				{
 					mockFileSystem.Directory.SetCurrentDirectory(currentDir);
-					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+					CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 				}
 				finally
 				{
@@ -299,6 +384,8 @@ namespace OvercrowdinTests
 				}
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
 			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
 			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
@@ -314,7 +401,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFileList(config, new AddCommand.Options(), mockFileSystem, new AddFileParameters(), foldersToCreate);
+				CommandUtilities.GetFileList(config, new AddCommand.Options(), mockFileSystem, new List<AddFileParameters>(), foldersToCreate);
 			}
 
 			Assert.Equal(4, foldersToCreate.Count);
@@ -324,34 +411,93 @@ namespace OvercrowdinTests
 			Assert.Contains("john/quincy/doe", foldersToCreate);
 		}
 
+		[Fact]
+		public void BatchesFilesInTwenties()
+		{
+			const int fileCount = CommandUtilities.BatchSize + 1;
+			var mockFileSystem = new MockFileSystem();
+			for (var i = 0; i < fileCount; i++)
+			{
+				mockFileSystem.File.WriteAllText($"{i}.txt", "txt");
+			}
+			var configJson = SetUpConfig("*.txt");
+			var fileParamsList = new List<AddFileParameters>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+			}
+
+			Assert.Equal(2, fileParamsList.Count);
+			Assert.Equal(CommandUtilities.BatchSize, fileParamsList[0].Files.Count);
+			Assert.Single(fileParamsList[1].Files);
+
+			// Ensure all files are still there
+			// Getting an aggregate set by adding the file from result[1] to result[0] would be easier, but changing the data seems unprincipled.
+			var allBatchedFiles = fileParamsList[0].Files.Concat(fileParamsList[1].Files).Select(kvp => kvp.Key).ToHashSet();
+			for (var i = 0; i < fileCount; i++)
+			{
+				Assert.Contains($"{i}.txt", allBatchedFiles);
+			}
+		}
+
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public void BatchesFilesInTwenties(bool testWithExportPatterns)
+		public void BatchFilesPreservesData(bool testWithExtraProperties)
 		{
 			const int fileCount = CommandUtilities.BatchSize + 1;
+			const string branchName = "I-get-copied-to-each-batch";
+
 			var files = new Dictionary<string, FileInfo>();
 			var exportPatterns = new Dictionary<string, string>();
-			var fileParams = new AddFileParameters
+			var titles = new Dictionary<string, string>();
+			var newNames = new Dictionary<string, string>();
+			dynamic fileParams;
+			if (testWithExtraProperties)
 			{
-				Files = files,
-				ExportPatterns = exportPatterns
-			};
+				fileParams = new UpdateFileParameters
+				{
+					Files = files,
+					ExportPatterns = exportPatterns,
+					Titles = titles,
+					NewNames = newNames,
+					Branch = branchName
+				};
+			}
+			else
+			{
+				fileParams = new AddFileParameters
+				{
+					Files = files,
+					Branch = branchName
+				};
+			}
+
 			for (var i = 0; i < fileCount; i++)
 			{
 				var key = i.ToString();
 				files[key] = new FileInfo($"{i}.txt");
-				if (testWithExportPatterns)
+				if (testWithExtraProperties)
 				{
 					exportPatterns[key] = $"%locale%/{i}.txt";
+					titles[key] = $"File {i}";
+					newNames[key] = $"file-{i}.txt";
 				}
 			}
 
-			var result = CommandUtilities.BatchFiles(fileParams);
+			FileParameters[] result = CommandUtilities.BatchFiles(fileParams);
 
 			Assert.Equal(2, result.Length);
 			Assert.Equal(CommandUtilities.BatchSize, result[0].Files.Count);
 			Assert.Single(result[1].Files);
+			foreach (var batch in result)
+			{
+				Assert.Equal(branchName, batch.Branch);
+			}
+
+			// Ensure all files are still there
 			// Getting an aggregate set by adding the file from result[1] to result[0] would be easier, but changing the data seems unprincipled.
 			var allBatchedFiles = result[0].Files.Concat(result[1].Files).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 			for (var i = 0; i < fileCount; i++)
@@ -360,11 +506,20 @@ namespace OvercrowdinTests
 				Assert.Equal(files[key], allBatchedFiles[key]);
 			}
 
-			if (!testWithExportPatterns)
+			if (!testWithExtraProperties)
 			{
-				Assert.Empty(result[0].ExportPatterns);
-				Assert.Empty(result[1].ExportPatterns);
+				foreach(var batch in result)
+				{
+					Assert.IsType<AddFileParameters>(batch);
+					Assert.Empty(batch.ExportPatterns);
+					Assert.Empty(batch.Titles);
+				}
 				return;
+			}
+
+			foreach (var batch in result)
+			{
+				Assert.IsType<UpdateFileParameters>(batch);
 			}
 			Assert.Equal(CommandUtilities.BatchSize, result[0].ExportPatterns.Count);
 			Assert.Single(result[1].ExportPatterns);
@@ -374,6 +529,44 @@ namespace OvercrowdinTests
 				var key = i.ToString();
 				Assert.Equal(exportPatterns[key], allBatchedExportPatterns[key]);
 			}
+
+			Assert.Equal(CommandUtilities.BatchSize, result[0].Titles.Count);
+			Assert.Single(result[1].Titles);
+			var allBatchedTitles = result[0].Titles.Concat(result[1].Titles).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			for (var i = 0; i < fileCount; i++)
+			{
+				var key = i.ToString();
+				Assert.Equal(titles[key], allBatchedTitles[key]);
+			}
+
+			var newNames0 = ((UpdateFileParameters)result[0]).NewNames;
+			var newNames1 = ((UpdateFileParameters)result[1]).NewNames;
+			Assert.Equal(CommandUtilities.BatchSize, newNames0.Count);
+			Assert.Single(newNames1);
+			var allBatchedNewNames = newNames0.Concat(newNames1).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+			for (var i = 0; i < fileCount; i++)
+			{
+				var key = i.ToString();
+				Assert.Equal(newNames[key], allBatchedNewNames[key]);
+			}
+		}
+
+		[Fact]
+		public void NoEmptyBatches()
+		{
+			var mockFileSystem = new MockFileSystem();
+			var configJson = SetUpConfig("file-not-found.txt");
+			var fileParamsList = new List<UpdateFileParameters>();
+			var foldersToCreate = new SortedSet<string>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFileList(config, new AddCommand.Options(), mockFileSystem, fileParamsList, foldersToCreate);
+			}
+
+			Assert.Empty(fileParamsList);
+			Assert.Empty(foldersToCreate);
 		}
 
 		[Fact]
@@ -468,14 +661,16 @@ namespace OvercrowdinTests
 			mockFileSystem.File.WriteAllText(localizableFileName, ResxOpenTag + ResxLocalizableData + ResxCloseTag);
 			mockFileSystem.File.WriteAllText("empty.resx", ResxOpenTag + ResxCloseTag);
 			var configJson = SetUpConfig("*.resx");
-			var fileParams = new AddFileParameters();
+			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParams, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
+			Assert.Single(fileParamsList);
+			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
 			Assert.Equal(localizableFileName, fileParams.Files.Keys.First());
 		}
