@@ -208,6 +208,80 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
+		public void IgnoreFolders()
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			dynamic configJson = SetUpConfig("/**/*.txt");
+			var file = configJson.files[0];
+			file.ignore = new JArray("**/jane/**/*", "**/quincy/**/*.*");
+			var fileParamsList = new List<UpdateFileParameters>();
+			var folders = new SortedSet<string>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, folders);
+			}
+
+			Assert.Single(fileParamsList);
+			var files = fileParamsList[0].Files.Keys;
+			Assert.Equal(3, files.Count);
+			Assert.Contains("test.txt", files);
+			Assert.Contains("john/test.txt", files);
+			Assert.Contains("john/doe/test.txt", files);
+
+			Assert.Equal(2, folders.Count);
+			Assert.Contains("john", folders);
+			Assert.Contains("john/doe", folders);
+		}
+
+		[Fact]
+		public void IgnoreFoldersMatching()
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			dynamic configJson = SetUpConfig("/**/*.txt");
+			var file = configJson.files[0];
+			file.ignore = new JArray("**/j*/**/*");
+			var fileParamsList = new List<UpdateFileParameters>();
+			var folders = new SortedSet<string>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, folders);
+			}
+
+			Assert.Single(fileParamsList);
+			var files = fileParamsList[0].Files.Keys;
+			Assert.Single(files);
+			Assert.Contains("test.txt", files);
+
+			Assert.Empty(folders);
+		}
+
+		[Fact]
+		public void IgnoreFilesMatching()
+		{
+			var mockFileSystem = SetUpDirectoryStructure();
+			dynamic configJson = SetUpConfig("/**/*.txt");
+			var file = configJson.files[0];
+			file.ignore = new JArray("**/te*");
+			var fileParamsList = new List<UpdateFileParameters>();
+			var folders = new SortedSet<string>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, folders);
+			}
+
+			Assert.Single(fileParamsList);
+			var files = fileParamsList[0].Files.Keys;
+			Assert.Single(files);
+			Assert.Contains("john/quincy/adams/allonym.txt", files);
+		}
+
+		[Fact]
 		public void GetIntAsBool()
 		{
 			dynamic json = new JObject();

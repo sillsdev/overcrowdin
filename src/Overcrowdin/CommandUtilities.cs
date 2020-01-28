@@ -12,9 +12,6 @@ namespace Overcrowdin
 {
 	public static class CommandUtilities
 	{
-		private const string UnsupportedSyntaxX =
-			"The specified source syntax is not supported. Please submit a pull request to help us support ";
-
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
 			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
 		{
@@ -103,6 +100,22 @@ namespace Overcrowdin
 
 				var matcher = new Matcher();
 				matcher.AddInclude(source);
+				foreach (var ignore in section.GetSection("ignore").GetChildren().Select(i => i.Get<string>()))
+				{
+					// https://support.crowdin.com/configuration-file/#usage-of-wildcards provides for ignoring translated files
+					// by using %placeholders% in the ignore section. Warn users that Overcrowdin has not implemented this.
+					var iPercent1 = ignore.IndexOf('%');
+					if (iPercent1 >= 0)
+					{
+						var iPercent2 = ignore.IndexOf('%', iPercent1);
+						if (iPercent2 >= 0)
+						{
+							Console.WriteLine("Warning: the following section of your ignore pattern may be interpreted as plain text:"
+								+ Environment.NewLine + ignore.Substring(iPercent1, iPercent2 + 1 - iPercent1));
+						}
+					}
+					matcher.AddExclude(ignore);
+				}
 				var matches = matcher.Execute(basePathInfoWrapper);
 				foreach (var sourceFile in matches.Files.Select(match => match.Path).Where(f => IsLocalizable(f, fs)))
 				{
