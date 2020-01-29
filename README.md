@@ -1,7 +1,7 @@
 ## Overcrowdin - A dotnet Crowdin CLI
 
-<a href="https://crowdin.com" target="_blank">Crowdin</a> is an amazing, cloud-based localization management system which many projects are using for localization.
-It provides a CLI in Java (<a href="https://github.com/crowdin/crowdin-cli-2" target="_blank">https://github.com/crowdin/crowdin-cli-2</a>), but that adds dependencies that many projects do not want. This project provides an alternative in the form of a <a href="https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools" target="_blank">.NET Core Global Tool</a>. 
+<a href="https://crowdin.com" target="_blank">Crowdin</a> is an amazing, popular, cloud-based localization management system.
+It provides a <a href="https://github.com/crowdin/crowdin-cli-2" target="_blank">CLI in Java</a>, but that adds dependencies that many projects do not want. This project provides an alternative in the form of a <a href="https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools" target="_blank">.NET Core Global Tool</a>. 
 
 **Overcrowdin** is a dotnet CLI built on top of the Crowdin project <a href="https://github.com/crowdin/crowdin-dotnet-client" target="_blank">crowdin-dotnet-client</a>, which provides a .NET Api over the Crowdin REST API.
 
@@ -18,7 +18,9 @@ Overcrowdin can be installed using the following command:
 
 ### Usage
 
-After installation ```overcrowdin``` will be available from the command prompt.
+After installation, ```overcrowdin``` will be available from the command prompt.
+
+Overcrowdin uses a configuration file named ```crowdin.json``` in the working directory. This file follows the structure of <a href="https://support.crowdin.com/configuration-file" target="_blank">Crowdin's YAML configuration file</a>.
 
 To see the program help, run ```overcrowdin``` with no options.
 
