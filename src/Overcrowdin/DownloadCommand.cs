@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Abstractions;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
@@ -25,80 +26,116 @@ namespace Overcrowdin
 
 			[Option('f', Required = true, HelpText = "Path and filename relative to the configured basepath for the zip file.")]
 			public string Filename { get; set; }
+
+			[Option('r', Required = false, Default = 0, HelpText = "Number of times to retry failed downloads (in four-minute intervals)")]
+			public int Retries { get; set; }
 		}
 
+		/// <summary>time to wait before retrying failed downloads (four minutes = 240,000ms)</summary>
+		private const int RetryWaitTime = 240000;
+
+		/// <summary>Number of milliseconds in a minute (60,000ms)</summary>
+		private const int MillisPerMinute = 60000;
 
 		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, IFileSystem fs)
 		{
 			var crowdin = CrowdinCommand.GetClient();
 
-			var status = 1;
 			var projectId = config["project_identifier"];
 			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
-			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
+			var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
 
 			var outputFile = Path.Combine(config["base_path"], opts.Filename);
-			if (!string.IsNullOrEmpty(projectKey))
+			if (string.IsNullOrEmpty(projectKey))
 			{
-				try
+				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", config["api_key_env"]);
+				return 1;
+			}
+
+			try
+			{
+				// Export translations if requested
+				if (opts.ExportFirst)
 				{
-					dynamic exportResponse = new {IsSuccessStatusCode = true};
-					if (opts.ExportFirst)
+					var exportResponse = await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters());
+					if (!exportResponse.IsSuccessStatusCode)
 					{
-						exportResponse = await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters());
+						Console.WriteLine("Failed to export translations.");
+						WriteResponseIf(opts.Verbose, exportResponse);
+						return 1;
 					}
-					if (exportResponse.IsSuccessStatusCode)
+				}
+
+				// Download translations
+				for (var retries = opts.Retries; retries >= 0; retries --)
+				{
+					try
 					{
 						var downloadResponse = await crowdin.DownloadTranslation(projectId,
-							projectCredentials, new DownloadTranslationParameters { Package = opts.Language });
+							projectCredentials, new DownloadTranslationParameters {Package = opts.Language});
 						if (downloadResponse.IsSuccessStatusCode)
 						{
 							using (var downloadedFile = fs.FileStream.Create(outputFile, FileMode.Create))
 							{
 								downloadedFile.Write(await downloadResponse.Content.ReadAsByteArrayAsync());
 							}
+
 							Console.WriteLine("Translations file downloaded to {0}", outputFile);
-							status = 0;
+							return 0;
 						}
-						else
+						Console.WriteLine("Failed to download translations.");
+						if (IsPermanent(downloadResponse.StatusCode))
 						{
-							Console.WriteLine("Failed to download translations.");
 							if (downloadResponse.StatusCode == HttpStatusCode.NotFound && !opts.ExportFirst)
 							{
 								Console.WriteLine("Did you export your translations?");
 							}
-							if (opts.Verbose)
-							{
-								var error = await downloadResponse.Content.ReadAsStringAsync();
-								Console.WriteLine(error);
-							}
+							WriteResponseIf(opts.Verbose, downloadResponse);
+							return 1;
 						}
+
+						WriteResponseIf(opts.Verbose, downloadResponse);
 					}
-					else
+					catch (HttpRequestException e)
 					{
-						Console.WriteLine("Failed to export translations.");
+						Console.WriteLine("Possibly no network connection.");
 						if (opts.Verbose)
 						{
-							var error = await exportResponse.Content.ReadAsStringAsync();
-							Console.WriteLine(error);
+							Console.WriteLine(e.Message);
 						}
 					}
-				}
-				catch (CrowdinException e)
-				{
-					Console.WriteLine("Failed to download translations. Check your project id and project key.");
-					if (opts.Verbose)
+
+					if (retries > 0)
 					{
-						Console.WriteLine($"{e.ErrorCode}: {e.Message}");
-						Console.WriteLine(e.StackTrace);
+						Console.WriteLine($"Trying {retries} more times in {RetryWaitTime/MillisPerMinute}-minute intervals.");
+						Thread.Sleep(RetryWaitTime);
 					}
 				}
 			}
-			else
+			catch (CrowdinException e)
 			{
-				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", config["api_key_env"]);
+				Console.WriteLine("Failed to export translations. Check your project id and project key.");
+				if (opts.Verbose)
+				{
+					Console.WriteLine($"{e.ErrorCode}: {e.Message}");
+					Console.WriteLine(e.StackTrace);
+				}
 			}
-			return status;
+			return 1;
+		}
+
+		private static async void WriteResponseIf(bool condition, HttpResponseMessage response)
+		{
+			if (!condition)
+				return;
+			var message = await response.Content.ReadAsStringAsync();
+			Console.WriteLine(message);
+		}
+
+		private static bool IsPermanent(HttpStatusCode error)
+		{
+			return error == HttpStatusCode.NotFound || // translations may not have been exported
+				error == HttpStatusCode.InternalServerError; // Crowdin API returned an error
 		}
 	}
 }
