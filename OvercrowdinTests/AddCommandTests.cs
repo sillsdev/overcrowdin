@@ -4,7 +4,6 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Crowdin.Api;
 using Crowdin.Api.Typed;
@@ -32,10 +31,7 @@ namespace OvercrowdinTests
 			_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
-			var gate = new AutoResetEvent(false);
-			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } },
-				gate, mockFileSystem);
-			gate.WaitOne();
+			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } }, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -67,9 +63,7 @@ namespace OvercrowdinTests
 				_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 					.Verifiable();
-				var gate = new AutoResetEvent(false);
-				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), gate, mockFileSystem);
-				gate.WaitOne();
+				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem);
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}
@@ -96,9 +90,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var gate = new AutoResetEvent(false);
-				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), gate, mockFileSystem);
-				gate.WaitOne();
+				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem);
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}
@@ -140,9 +132,7 @@ namespace OvercrowdinTests
 						It.Is<AddFileParameters>(fp => fp.Files.Count == 2 && fp.ExportPatterns.Count == 2)))
 					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 					.Verifiable("second batch");
-				var gate = new AutoResetEvent(false);
-				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), gate, mockFileSystem);
-				gate.WaitOne();
+				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem);
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}
@@ -167,10 +157,7 @@ namespace OvercrowdinTests
 			_mockClient.Setup(x => x.CreateFolder(projectId, It.IsAny<ProjectCredentials>(), It.Is<CreateFolderParameters>(fp => fp.Name.StartsWith(pathParts[0]))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable("should have created folder");
-			var gate = new AutoResetEvent(false);
-			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } },
-				gate, mockFileSystem);
-			gate.WaitOne();
+			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } }, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}

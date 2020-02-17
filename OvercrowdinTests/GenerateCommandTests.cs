@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Crowdin.Api;
@@ -22,10 +21,8 @@ namespace OvercrowdinTests
 			Environment.SetEnvironmentVariable("KEYEXISTS", "fakecrowdinapikey");
 			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<ProjectCredentials>()))
 				.Throws(new CrowdinException("No user", 404));
-			var gate = new AutoResetEvent(false);
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
-				new GenerateCommand.Options {BasePath = ".", Key = "KEYEXISTS"}, gate, mockFileSystem);
-			gate.WaitOne();
+				new GenerateCommand.Options {BasePath = ".", Key = "KEYEXISTS"}, mockFileSystem);
 			Assert.Equal(1, result);
 		}
 
@@ -33,10 +30,8 @@ namespace OvercrowdinTests
 		public async void NoAPIKeyFails()
 		{
 			var mockFileSystem = new MockFileSystem();
-			var gate = new AutoResetEvent(false);
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
-				new GenerateCommand.Options {BasePath = ".", Key = "FAKEAPIKEYENVVARFORTESET"}, gate, mockFileSystem);
-			gate.WaitOne();
+				new GenerateCommand.Options {BasePath = ".", Key = "FAKEAPIKEYENVVARFORTESET"}, mockFileSystem);
 			Assert.Equal(1, result);
 		}
 
@@ -59,12 +54,9 @@ namespace OvercrowdinTests
 			Assert.NotNull(projectInfo); // verify that the test data is good
 			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<ProjectCredentials>()))
 				.Returns(Task.FromResult(projectInfo));
-			var gate = new AutoResetEvent(false);
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
 				new GenerateCommand.Options
-					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier},
-				gate, mockFileSystem);
-			gate.WaitOne();
+					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier}, mockFileSystem);
 			var mockOutputFile = mockFileSystem.GetFile(outputFileName).TextContents;
 			var contents = JObject.Parse(mockOutputFile);
 			Assert.True(contents.ContainsKey("project_identifier"));
@@ -95,12 +87,9 @@ namespace OvercrowdinTests
 			Assert.NotNull(projectInfo); // verify that the test data is good
 			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<ProjectCredentials>()))
 				.Returns(Task.FromResult(projectInfo));
-			var gate = new AutoResetEvent(false);
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
 				new GenerateCommand.Options
-					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier},
-				gate, mockFileSystem);
-			gate.WaitOne();
+					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier}, mockFileSystem);
 			var mockOutputFile = mockFileSystem.GetFile(outputFileName).TextContents;
 			var contents = JObject.Parse(mockOutputFile);
 			Assert.True(contents.ContainsKey("project_identifier"));

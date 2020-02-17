@@ -31,19 +31,23 @@ namespace Overcrowdin
 			var parseResult = Parser.Default.ParseArguments<GenerateCommand.Options, UpdateCommand.Options, AddCommand.Options, DownloadCommand.Options>(args)
 				.WithParsed<GenerateCommand.Options>(async opts =>
 				{
-					result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, Gate, fileSystem);
+					result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, fileSystem);
+					Gate.Set();
 				})
 				.WithParsed<UpdateCommand.Options>(async opts =>
 				{
-					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, Gate, fileSystem);
+					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, fileSystem);
+					Gate.Set();
 				})
 				.WithParsed<AddCommand.Options>(async opts =>
 				{
-					result = await AddCommand.AddFilesToCrowdin(config, opts, Gate, fileSystem);
+					result = await AddCommand.AddFilesToCrowdin(config, opts, fileSystem);
+					Gate.Set();
 				})
 				.WithParsed<DownloadCommand.Options>(async opts =>
 				{
-					result = await DownloadCommand.DownloadFromCrowdin(config, opts, Gate, fileSystem);
+					result = await DownloadCommand.DownloadFromCrowdin(config, opts, fileSystem);
+					Gate.Set();
 				})
 				.WithNotParsed(errs =>
 				{

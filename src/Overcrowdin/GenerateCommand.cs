@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO.Abstractions;
-using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Crowdin.Api;
@@ -15,7 +14,7 @@ namespace Overcrowdin
 	/// </summary>
 	public class GenerateCommand
 	{
-		public static async Task<int> GenerateConfigFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate, IFileSystem fs)
+		public static async Task<int> GenerateConfigFromCrowdin(IConfiguration config, Options opts, IFileSystem fs)
 		{
 			var success = 1;
 			var key = Environment.GetEnvironmentVariable(opts.Key);
@@ -50,7 +49,6 @@ namespace Overcrowdin
 				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", opts.Key);
 			}
 
-			gate.Set();
 			return success;
 		}
 
