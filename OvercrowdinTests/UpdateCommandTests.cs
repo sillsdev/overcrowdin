@@ -4,7 +4,6 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Crowdin.Api;
 using Crowdin.Api.Typed;
@@ -29,10 +28,7 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
 			// No need to set up calls. If the API key is missing, the API call should not be attempted.
-			var gate = new AutoResetEvent(false);
-			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } },
-				gate, mockFileSystem.FileSystem);
-			gate.WaitOne();
+			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } }, mockFileSystem.FileSystem);
 			_mockClient.Verify();
 			Assert.Equal(1, result);
 		}
@@ -51,10 +47,7 @@ namespace OvercrowdinTests
 			_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
-			var gate = new AutoResetEvent(false);
-			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } },
-				gate, mockFileSystem);
-			gate.WaitOne();
+			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } }, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -87,9 +80,7 @@ namespace OvercrowdinTests
 				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 					.Verifiable();
-				var gate = new AutoResetEvent(false);
-				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), gate, mockFileSystem);
-				gate.WaitOne();
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}
@@ -117,9 +108,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var gate = new AutoResetEvent(false);
-				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), gate, mockFileSystem);
-				gate.WaitOne();
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}
@@ -162,9 +151,7 @@ namespace OvercrowdinTests
 						It.Is<UpdateFileParameters>(fp => fp.Files.Count == secondBatchSize && fp.ExportPatterns.Count == secondBatchSize)))
 					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 					.Verifiable("second batch");
-				var gate = new AutoResetEvent(false);
-				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), gate, mockFileSystem);
-				gate.WaitOne();
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);
 				_mockClient.Verify();
 				Assert.Equal(0, result);
 			}

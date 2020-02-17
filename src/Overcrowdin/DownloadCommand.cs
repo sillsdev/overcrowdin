@@ -28,7 +28,7 @@ namespace Overcrowdin
 		}
 
 
-		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, AutoResetEvent gate, IFileSystem fs)
+		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, IFileSystem fs)
 		{
 			var crowdin = CrowdinCommand.GetClient();
 
@@ -98,7 +98,6 @@ namespace Overcrowdin
 			{
 				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", config["api_key_env"]);
 			}
-			gate.Set();
 			return status;
 		}
 	}
