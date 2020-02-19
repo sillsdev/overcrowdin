@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
-using System.Xml.Linq;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
@@ -306,8 +305,8 @@ namespace OvercrowdinTests
 			const string trElt0 = "//string[@txt]";
 			const string trElt1a = "/cheese/wheel";
 			const string trElt1b = "/round[@round]";
-			mockFileSystem.File.WriteAllText(fileName0, "<br/>");
-			mockFileSystem.File.WriteAllText(fileName1, "<br/>");
+			mockFileSystem.File.WriteAllText(fileName0, "<string txt='something'/>");
+			mockFileSystem.File.WriteAllText(fileName1, "<cheese><wheel>swiss</wheel></cheese>");
 			dynamic configJson = SetUpConfig(fileName0);
 			var files = configJson.files;
 			files[0].translate_content = 0;
@@ -607,86 +606,14 @@ namespace OvercrowdinTests
 			Assert.Empty(result.First().Files);
 		}
 
-		// Tests for filtering unnecessary .resx files:
-
 		[Fact]
-		public void ResxFilterExcludesEmptyValues()
-		{
-			var elt = new XElement("data", new XAttribute("name", "someString"), new XElement("value"));
-			Assert.False(CommandUtilities.HasLocalizableData(elt));
-		}
-
-		[Theory]
-		[InlineData("something.Icon")]
-		[InlineData("something.Name")]
-		public void ResxFilterExcludesNonLocalizableStrings(string dataName)
-		{
-			var elt = new XElement("data", new XAttribute("name", dataName), new XElement("value", "content"));
-			Assert.False(CommandUtilities.HasLocalizableData(elt));
-		}
-
-		[Theory]
-		[InlineData("someString")]
-		[InlineData("something.Text")]
-		[InlineData("something.AccessibleName")]
-		[InlineData("something.AccessibleDescription")]
-		public void ResxFilterIncludesLocalizableStrings(string dataName)
-		{
-			var elt = new XElement("data", new XAttribute("name", dataName), new XElement("value", "content"));
-			Assert.True(CommandUtilities.HasLocalizableData(elt));
-		}
-
-		[Fact]
-		public void ResxFilterIncludesLocalizableDocuments()
-		{
-			var doc = XDocument.Load(new StringReader(ResxOpenTag + ResxLocalizableData + ResxNonLocalizableData + ResxCloseTag));
-			Assert.True(CommandUtilities.HasLocalizableData(doc));
-		}
-
-		/// <remarks>
-		/// Crowdin imports whitespaces strings, but they are hidden by default and localizers are instructed not to localize spaces.
-		/// </remarks>
-		[Fact]
-		public void ResxFilterExcludesLocalizableWhitespace()
-		{
-			var doc = XDocument.Load(new StringReader(ResxOpenTag + ResxLocalizableWhitespace + ResxCloseTag));
-			Assert.False(CommandUtilities.HasLocalizableData(doc));
-		}
-
-		[Fact]
-		public void ResxFilterExcludesNonLocalizableDocuments()
-		{
-			var doc = XDocument.Load(new StringReader(ResxOpenTag + ResxEmptyLocalizableData + ResxNonLocalizableData + ResxCloseTag));
-			Assert.False(CommandUtilities.HasLocalizableData(doc));
-		}
-
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public void FilterFiltersResx(bool hasLocalizableData)
-		{
-			var mockFileSystem = new MockFileSystem();
-			const string fileName = "test.resx";
-			mockFileSystem.File.WriteAllText(fileName, ResxOpenTag + (hasLocalizableData ? ResxLocalizableData : string.Empty) + ResxCloseTag);
-			Assert.Equal(hasLocalizableData, CommandUtilities.IsLocalizable(fileName, mockFileSystem));
-		}
-
-		[Fact]
-		public void FilterFiltersOnlyResx()
-		{
-			var mockFileSystem = new MockFileSystem();
-			const string fileName = "test.xml";
-			mockFileSystem.File.WriteAllText(fileName, ResxOpenTag + ResxCloseTag);
-			Assert.True(CommandUtilities.IsLocalizable(fileName, mockFileSystem));
-		}
-
-		[Fact]
-		public void MatchedFilesAreFiltered()
+		public void ResxFilesAreFiltered()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string localizableFileName = "full.resx";
-			mockFileSystem.File.WriteAllText(localizableFileName, ResxOpenTag + ResxLocalizableData + ResxCloseTag);
-			mockFileSystem.File.WriteAllText("empty.resx", ResxOpenTag + ResxCloseTag);
+			mockFileSystem.File.WriteAllText(localizableFileName,
+				ResxFilterTests.ResxOpenTag + ResxFilterTests.ResxLocalizableData + ResxFilterTests.ResxCloseTag);
+			mockFileSystem.File.WriteAllText("empty.resx", ResxFilterTests.ResxOpenTag + ResxFilterTests.ResxCloseTag);
 			var configJson = SetUpConfig("*.resx");
 			var fileParamsList = new List<AddFileParameters>();
 
@@ -702,23 +629,50 @@ namespace OvercrowdinTests
 			Assert.Equal(localizableFileName, fileParams.Files.Keys.First());
 		}
 
-		private const string ResxOpenTag = @"<?xml version=""1.0"" encoding=""utf-8""?><root>";
-		private const string ResxLocalizableData = @"
-  <data name=""$this.AccessibleName"" xml:space=""preserve"">
-	<value>Date matcher</value>
-  </data>";
-		private const string ResxLocalizableWhitespace = @"
-  <data name=""ksSingleSpace"" xml:space=""preserve"">
-	<value> </value>
-  </data>";
-		private const string ResxNonLocalizableData = @"
-  <data name=""&gt;&gt;$this.Name"" xml:space=""preserve"">
-	<value>SimpleDateMatchDlg</value>
-  </data>";
-		private const string ResxEmptyLocalizableData = @"
-  <data name=""$this.Text"" xml:space=""preserve"">
-	<value></value>
-  </data>";
-		private const string ResxCloseTag = "</root>";
+		[Theory]
+		[InlineData("Add")]
+		[InlineData("Update")]
+		public void XmlFilesAreFiltered(string operation)
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string fileNameNotFiltered = "notFiltered.xml";
+			mockFileSystem.File.WriteAllText(fileNameNotFiltered, XmlFilterTests.XmlOpenTag + XmlFilterTests.XmlCloseTag);
+			const string fileNamePassesFilter = "filterPass.xml";
+			mockFileSystem.File.WriteAllText(fileNamePassesFilter,
+				XmlFilterTests.XmlOpenTag + XmlFilterTests.XmlGroupCorrect + XmlFilterTests.XmlCloseTag);
+			mockFileSystem.File.WriteAllText("filterFail.xml", XmlFilterTests.XmlOpenTag + XmlFilterTests.XmlCloseTag);
+			dynamic configJson = SetUpConfig(fileNameNotFiltered);
+			dynamic file = new JObject();
+			file.source = "filter*.xml";
+			file.translatable_elements = new JArray { XmlFilterTests.XpathToWrongAttribute, XmlFilterTests.XpathToTranslatableElements };
+			configJson.files.Add(file);
+			var fileParamsList = new List<FileParameters>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				switch (operation)
+				{
+					case "Add":
+						var addFileParamsList = new List<AddFileParameters>();
+						CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, addFileParamsList, new SortedSet<string>());
+						fileParamsList.AddRange(addFileParamsList);
+						break;
+					case "Update":
+						var updateFileParamsList = new List<UpdateFileParameters>();
+						CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, updateFileParamsList, new SortedSet<string>());
+						fileParamsList.AddRange(updateFileParamsList);
+						break;
+				}
+			}
+
+			Assert.Equal(2, fileParamsList.Count);
+			var fileParams = fileParamsList[0];
+			Assert.Single(fileParams.Files);
+			Assert.Equal(fileNameNotFiltered, fileParams.Files.Keys.First());
+			fileParams = fileParamsList[1];
+			Assert.Single(fileParams.Files);
+			Assert.Equal(fileNamePassesFilter, fileParams.Files.Keys.First());
+		}
 	}
 }
