@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileSystemGlobbing;
+using Overcrowdin.ContentFiltering;
 
 namespace Overcrowdin
 {
@@ -80,6 +81,7 @@ namespace Overcrowdin
 					Files = new Dictionary<string, FileInfo>(),
 					ExportPatterns = new Dictionary<string, string>()
 				};
+				var translatableElements = section.GetSection("translatable_elements").GetChildren().Select(te => te.Get<string>()).ToList();
 				if (fileParams is AddFileParameters addFileParams)
 				{
 					addFileParams.TranslateContent = GetIntAsBool(section, "translate_content");
@@ -93,9 +95,7 @@ namespace Overcrowdin
 					{
 						Console.WriteLine("Warning: the option import_translations is not yet supported by overcrowdin!");
 					}
-
-					var translatableElements = section.GetSection("translatable_elements");
-					addFileParams.TranslatableElements = translatableElements.GetChildren().Select(te => te.Get<string>()).ToList();
+					addFileParams.TranslatableElements = translatableElements;
 				}
 
 				var matcher = new Matcher();
@@ -117,7 +117,8 @@ namespace Overcrowdin
 					matcher.AddExclude(ignore);
 				}
 				var matches = matcher.Execute(basePathInfoWrapper);
-				foreach (var sourceFile in matches.Files.Select(match => match.Path).Where(f => IsLocalizable(f, fs)))
+				foreach (var sourceFile in matches.Files.Select(match => match.Path)
+					.Where(f => ContentFilter.IsLocalizable(fs, f, translatableElements)))
 				{
 					// Key is the relative path with Unix directory separators
 					var key = sourceFile.Replace(Path.DirectorySeparatorChar, '/');
@@ -210,37 +211,6 @@ namespace Overcrowdin
 			}
 
 			return batchedFiles;
-		}
-
-		/// <summary>
-		/// Determines whether a file should be uploaded to Crowdin.
-		/// .resx files with no localizable data are not uploaded.
-		/// </summary>
-		public static bool IsLocalizable(string path, IFileSystem fs)
-		{
-			return !".resx".Equals(Path.GetExtension(path)) || HasLocalizableData(XDocument.Load(fs.File.OpenRead(path)));
-		}
-
-		/// <returns>true if the given resx document contains at least one localizable string</returns>
-		public static bool HasLocalizableData(XDocument resxDoc)
-		{
-			return resxDoc.Element("root")?.Elements("data").Any(HasLocalizableData) ?? false;
-		}
-
-		/// <returns>true if the given resx <c>data</c> element has a localizable string</returns>
-		public static bool HasLocalizableData(XElement elt)
-		{
-			var name = elt.Attribute("name")?.Value;
-			if (string.IsNullOrEmpty(name))
-				return false;
-			// Project resource strings do not have a '.' in their name, but WinForms dialog .resx files have a '.' in every name.
-			// The only localizable properties of WinForms components are Text, AccessibleName, and AccessibleDescription.
-			if (name.Contains('.') &&
-				!(name.EndsWith(".Text") || name.EndsWith(".AccessibleName") || name.EndsWith(".AccessibleDescription")))
-				return false;
-			if (string.IsNullOrWhiteSpace(elt.Element("value")?.Value))
-				return false;
-			return true;
 		}
 	}
 }
