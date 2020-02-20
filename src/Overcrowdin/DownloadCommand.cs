@@ -101,7 +101,15 @@ namespace Overcrowdin
 						Console.WriteLine("Possibly no network connection.");
 						if (opts.Verbose)
 						{
-							Console.WriteLine(e.Message);
+							Console.WriteLine(e);
+						}
+					}
+					catch (TaskCanceledException e)
+					{
+						Console.WriteLine("The network connection may be too slow to support this download.");
+						if (opts.Verbose)
+						{
+							Console.WriteLine(e);
 						}
 					}
 
