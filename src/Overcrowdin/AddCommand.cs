@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommandLine;
-using Crowdin.Api;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 
@@ -24,15 +23,12 @@ namespace Overcrowdin
 		{
 			var crowdin = CrowdinCommand.GetClient();
 			var projectId = config["project_identifier"];
-			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
-
-			if (string.IsNullOrEmpty(projectKey))
+			var credentials = CommandUtilities.GetCredentialsFromConfiguration(config);
+			if (credentials == null)
 			{
-				Console.WriteLine($"Environment variable {config["api_key_env"]} did not contain the API Key for your Crowdin project.");
 				return 1;
 			}
 
-			var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
 			var addFileParamsList = new List<AddFileParameters>();
 			var foldersToCreate = new SortedSet<string>();
 			CommandUtilities.GetFileList(config, opts, fs, addFileParamsList, foldersToCreate);
@@ -56,7 +52,7 @@ namespace Overcrowdin
 			do
 			{
 				var addFileParams = addFileParamsList[i];
-				result = await crowdin.AddFile(projectId, projectCredentials, addFileParams);
+				result = await crowdin.AddFile(projectId, credentials, addFileParams);
 			} while (++i < addFileParamsList.Count && result.IsSuccessStatusCode);
 
 			// Give results

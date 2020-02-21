@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
+using Crowdin.Api;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
@@ -14,6 +15,35 @@ namespace OvercrowdinTests
 {
 	public class CommandUtilitiesTests : CrowdinApiTestBase
 	{
+		[Fact]
+		public void IncompleteConfigReturnsNull()
+		{
+			var result = CommandUtilities.GetCredentialsFromConfiguration(_mockConfig.Object);
+			Assert.Null(result);
+		}
+
+		[Fact]
+		public void MissingApiKeyReturnsNull()
+		{
+			const string apiKeyEnvVar = "NOKEYEXISTS";
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
+			var result = CommandUtilities.GetCredentialsFromConfiguration(_mockConfig.Object);
+			Assert.Null(result);
+		}
+
+		[Fact]
+		public void ProjectApiKeyReturnsProjectCredentials()
+		{
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string apiKey = "fakecrowdinapikey";
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, apiKey);
+			var result = CommandUtilities.GetCredentialsFromConfiguration(_mockConfig.Object);
+			var projCreds = result as ProjectCredentials;
+			Assert.NotNull(projCreds);
+			Assert.Equal(apiKey, projCreds.ProjectKey);
+		}
+
 		private static MockFileSystem SetUpDirectoryStructure()
 		{
 			var fileSys = new MockFileSystem();

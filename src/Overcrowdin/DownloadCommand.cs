@@ -42,22 +42,20 @@ namespace Overcrowdin
 			var crowdin = CrowdinCommand.GetClient();
 
 			var projectId = config["project_identifier"];
-			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
-			var projectCredentials = new ProjectCredentials {ProjectKey = projectKey};
-
-			var outputFile = Path.Combine(config["base_path"], opts.Filename);
-			if (string.IsNullOrEmpty(projectKey))
+			var credentials = CommandUtilities.GetCredentialsFromConfiguration(config);
+			if (credentials == null)
 			{
-				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", config["api_key_env"]);
 				return 1;
 			}
+
+			var outputFile = Path.Combine(config["base_path"], opts.Filename);
 
 			try
 			{
 				// Export translations if requested
 				if (opts.ExportFirst)
 				{
-					var exportResponse = await crowdin.ExportTranslation(projectId, projectCredentials, new ExportTranslationParameters());
+					var exportResponse = await crowdin.ExportTranslation(projectId, credentials, new ExportTranslationParameters());
 					if (!exportResponse.IsSuccessStatusCode)
 					{
 						Console.WriteLine("Failed to export translations.");
@@ -72,7 +70,7 @@ namespace Overcrowdin
 					try
 					{
 						var downloadResponse = await crowdin.DownloadTranslation(projectId,
-							projectCredentials, new DownloadTranslationParameters {Package = opts.Language});
+							credentials, new DownloadTranslationParameters {Package = opts.Language});
 						if (downloadResponse.IsSuccessStatusCode)
 						{
 							using (var downloadedFile = fs.FileStream.Create(outputFile, FileMode.Create))
