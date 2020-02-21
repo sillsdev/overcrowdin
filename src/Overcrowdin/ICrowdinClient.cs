@@ -7,11 +7,11 @@ namespace Overcrowdin
 {
 	public interface ICrowdinClient
 	{
-		Task<ProjectInfo> GetProjectInfo(string projectIdentifier, ProjectCredentials projectCredentials);
-		Task<HttpResponseMessage> UpdateFile(string projectId, ProjectCredentials projectCredentials, UpdateFileParameters updateFileParameters);
-		Task<HttpResponseMessage> AddFile(string projectId, ProjectCredentials projectCredentials, AddFileParameters addFileParams);
-		Task<HttpResponseMessage> CreateFolder(string projectId, ProjectCredentials projectCredentials, CreateFolderParameters createFolderParams);
-		Task<HttpResponseMessage> ExportTranslation(string projectId, ProjectCredentials projectCredentials, ExportTranslationParameters exportTranslationParameters);
-		Task<HttpResponseMessage> DownloadTranslation(string projectId, ProjectCredentials projectCredentials, DownloadTranslationParameters downloadTranslationParameters);
+		Task<ProjectInfo> GetProjectInfo(string projectIdentifier, Credentials projectCredentials);
+		Task<HttpResponseMessage> UpdateFile(string projectId, Credentials projectCredentials, UpdateFileParameters updateFileParameters);
+		Task<HttpResponseMessage> AddFile(string projectId, Credentials projectCredentials, AddFileParameters addFileParams);
+		Task<HttpResponseMessage> CreateFolder(string projectId, Credentials projectCredentials, CreateFolderParameters createFolderParams);
+		Task<HttpResponseMessage> ExportTranslation(string projectId, Credentials projectCredentials, ExportTranslationParameters exportTranslationParameters);
+		Task<HttpResponseMessage> DownloadTranslation(string projectId, Credentials projectCredentials, DownloadTranslationParameters downloadTranslationParameters);
 	}
 }

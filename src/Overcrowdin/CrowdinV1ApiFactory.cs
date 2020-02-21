@@ -26,33 +26,33 @@ namespace Overcrowdin
 				_crowdin = new Client(httpClient);
 			}
 
-			public Task<ProjectInfo> GetProjectInfo(string projectIdentifier, ProjectCredentials projectCredentials)
+			public Task<ProjectInfo> GetProjectInfo(string projectIdentifier, Credentials projectCredentials)
 			{
 				return _crowdin.GetProjectInfo(projectIdentifier, projectCredentials);
 			}
 
-			public Task<HttpResponseMessage> UpdateFile(string projectId, ProjectCredentials projectCredentials, UpdateFileParameters updateFileParameters)
+			public Task<HttpResponseMessage> UpdateFile(string projectId, Credentials projectCredentials, UpdateFileParameters updateFileParameters)
 			{
 				return _crowdin.UpdateFile(projectId, projectCredentials, updateFileParameters);
 			}
 
-			public Task<HttpResponseMessage> AddFile(string projectId, ProjectCredentials projectCredentials, AddFileParameters addFileParams)
+			public Task<HttpResponseMessage> AddFile(string projectId, Credentials projectCredentials, AddFileParameters addFileParams)
 			{
 				return _crowdin.AddFile(projectId, projectCredentials, addFileParams);
 			}
 
-			public Task<HttpResponseMessage> CreateFolder(string projectId, ProjectCredentials projectCredentials, CreateFolderParameters createFolderParams)
+			public Task<HttpResponseMessage> CreateFolder(string projectId, Credentials projectCredentials, CreateFolderParameters createFolderParams)
 			{
 				return _crowdin.CreateFolder(projectId, projectCredentials, createFolderParams);
 			}
 
-			public Task<HttpResponseMessage> ExportTranslation(string projectId, ProjectCredentials projectCredentials,
+			public Task<HttpResponseMessage> ExportTranslation(string projectId, Credentials projectCredentials,
 				ExportTranslationParameters exportTranslationParameters)
 			{
 				return _crowdin.ExportTranslation(projectId, projectCredentials, exportTranslationParameters);
 			}
 
-			public Task<HttpResponseMessage> DownloadTranslation(string projectId, ProjectCredentials projectCredentials,
+			public Task<HttpResponseMessage> DownloadTranslation(string projectId, Credentials projectCredentials,
 				DownloadTranslationParameters downloadTranslationParameters)
 			{
 				return _crowdin.DownloadTranslation(projectId, projectCredentials, downloadTranslationParameters);
