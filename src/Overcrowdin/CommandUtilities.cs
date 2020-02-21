@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Xml.Linq;
+using Crowdin.Api;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileSystemGlobbing;
@@ -13,6 +13,26 @@ namespace Overcrowdin
 {
 	public static class CommandUtilities
 	{
+		public static Credentials GetCredentialsFromConfiguration(IConfiguration config)
+		{
+			var projectKeyEnvVar = config["api_key_env"];
+			if (string.IsNullOrEmpty(projectKeyEnvVar))
+			{
+				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'api_key_env' " +
+					"(the environment variable containing the API Key for your Crowdin project).");
+				return null;
+			}
+
+			var projectKey = Environment.GetEnvironmentVariable(projectKeyEnvVar);
+			if (string.IsNullOrEmpty(projectKey))
+			{
+				Console.WriteLine($"Environment variable {config["api_key_env"]} did not contain the API Key for your Crowdin project.");
+				return null;
+			}
+
+			return new ProjectCredentials {ProjectKey = projectKey};
+		}
+
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
 			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
 		{
