@@ -28,7 +28,8 @@ namespace Overcrowdin
 				.AddCommandLine(args)
 				.Build();
 			int result = 1;
-			var parseResult = Parser.Default.ParseArguments<GenerateCommand.Options, UpdateCommand.Options, AddCommand.Options, DownloadCommand.Options>(args)
+			var parseResult = Parser.Default.ParseArguments<GenerateCommand.Options, UpdateCommand.Options,
+					AddCommand.Options, DownloadCommand.Options, ExportCommand.Options>(args)
 				.WithParsed<GenerateCommand.Options>(async opts =>
 				{
 					result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, fileSystem);
@@ -47,6 +48,11 @@ namespace Overcrowdin
 				.WithParsed<DownloadCommand.Options>(async opts =>
 				{
 					result = await DownloadCommand.DownloadFromCrowdin(config, opts, fileSystem);
+					Gate.Set();
+				})
+				.WithParsed<ExportCommand.Options>(async opts =>
+				{
+					result = await ExportCommand.ExportCrowdinTranslations(config, opts);
 					Gate.Set();
 				})
 				.WithNotParsed(errs =>

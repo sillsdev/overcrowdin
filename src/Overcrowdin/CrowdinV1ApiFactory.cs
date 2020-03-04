@@ -26,36 +26,42 @@ namespace Overcrowdin
 				_crowdin = new Client(httpClient);
 			}
 
-			public Task<ProjectInfo> GetProjectInfo(string projectIdentifier, Credentials projectCredentials)
+			public Task<ProjectInfo> GetProjectInfo(string projectIdentifier, Credentials credentials)
 			{
-				return _crowdin.GetProjectInfo(projectIdentifier, projectCredentials);
+				return _crowdin.GetProjectInfo(projectIdentifier, credentials);
 			}
 
-			public Task<HttpResponseMessage> UpdateFile(string projectId, Credentials projectCredentials, UpdateFileParameters updateFileParameters)
+			public Task<HttpResponseMessage> UpdateFile(string projectId, Credentials credentials, UpdateFileParameters updateFileParameters)
 			{
-				return _crowdin.UpdateFile(projectId, projectCredentials, updateFileParameters);
+				return _crowdin.UpdateFile(projectId, credentials, updateFileParameters);
 			}
 
-			public Task<HttpResponseMessage> AddFile(string projectId, Credentials projectCredentials, AddFileParameters addFileParams)
+			public Task<HttpResponseMessage> AddFile(string projectId, Credentials credentials, AddFileParameters addFileParams)
 			{
-				return _crowdin.AddFile(projectId, projectCredentials, addFileParams);
+				return _crowdin.AddFile(projectId, credentials, addFileParams);
 			}
 
-			public Task<HttpResponseMessage> CreateFolder(string projectId, Credentials projectCredentials, CreateFolderParameters createFolderParams)
+			public Task<HttpResponseMessage> CreateFolder(string projectId, Credentials credentials, CreateFolderParameters createFolderParams)
 			{
-				return _crowdin.CreateFolder(projectId, projectCredentials, createFolderParams);
+				return _crowdin.CreateFolder(projectId, credentials, createFolderParams);
 			}
 
-			public Task<HttpResponseMessage> ExportTranslation(string projectId, Credentials projectCredentials,
+			public Task<HttpResponseMessage> ExportTranslation(string projectId, Credentials credentials,
 				ExportTranslationParameters exportTranslationParameters)
 			{
-				return _crowdin.ExportTranslation(projectId, projectCredentials, exportTranslationParameters);
+				return _crowdin.ExportTranslation(projectId, credentials, exportTranslationParameters);
 			}
 
-			public Task<HttpResponseMessage> DownloadTranslation(string projectId, Credentials projectCredentials,
+			public Task<HttpResponseMessage> GetExportStatus(string projectId, Credentials credentials,
+				GetTranslationExportStatusParameters exportTranslationParameters)
+			{
+				return _crowdin.GetTranslationExportStatus(projectId, credentials, exportTranslationParameters);
+			}
+
+			public Task<HttpResponseMessage> DownloadTranslation(string projectId, Credentials credentials,
 				DownloadTranslationParameters downloadTranslationParameters)
 			{
-				return _crowdin.DownloadTranslation(projectId, projectCredentials, downloadTranslationParameters);
+				return _crowdin.DownloadTranslation(projectId, credentials, downloadTranslationParameters);
 			}
 		}
 	}
