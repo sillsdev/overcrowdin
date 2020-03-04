@@ -53,15 +53,9 @@ namespace Overcrowdin
 			try
 			{
 				// Export translations if requested
-				if (opts.ExportFirst)
+				if (opts.ExportFirst && 0 != await ExportCommand.ExportCrowdinTranslations(projectId, credentials, opts.Verbose))
 				{
-					var exportResponse = await crowdin.ExportTranslation(projectId, credentials, new ExportTranslationParameters());
-					if (!exportResponse.IsSuccessStatusCode)
-					{
-						Console.WriteLine("Failed to export translations.");
-						WriteResponseIf(opts.Verbose, exportResponse);
-						return 1;
-					}
+					return 1;
 				}
 
 				// Download translations
