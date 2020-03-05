@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Net.Http;
@@ -42,7 +42,19 @@ namespace OvercrowdinTests
 			// Set up the calls to Export and Download
 			_mockClient.Setup(client => client.ExportTranslation(projectId, It.IsAny<ProjectCredentials>(),
 					It.IsAny<ExportTranslationParameters>()))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)));
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted))).Verifiable();
+			var mockExportStatus = new HttpResponseMessage(HttpStatusCode.Accepted)
+			{
+				Content = new StringContent($@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<success>
+  <status>{ExportStatus.Finished}</status>
+  <progress>100</progress>
+  <last_build>2018-10-22T13:49:00+0000</last_build>
+</success>")
+			};
+			_mockClient.Setup(client => client.GetExportStatus(projectId, It.IsAny<ProjectCredentials>(),
+				It.IsAny<GetTranslationExportStatusParameters>()))
+				.Returns(Task.FromResult(mockExportStatus));
 			_mockClient.Setup(client => client.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(),
 					It.IsAny<DownloadTranslationParameters>()))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted) {Content = new ByteArrayContent(new byte[] {0x50, 0x4b, 0x03, 0x04})}));
