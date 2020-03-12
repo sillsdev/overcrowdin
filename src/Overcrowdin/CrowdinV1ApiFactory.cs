@@ -22,7 +22,7 @@ namespace Overcrowdin
 
 			internal CrowdinApiV1()
 			{
-				var httpClient = new HttpClient { BaseAddress = new Uri("https://api.crowdin.com/api/") };
+				var httpClient = new HttpClient { BaseAddress = new Uri("https://api.crowdin.com/api/"), Timeout = new TimeSpan(0, 30, 0)};
 				_crowdin = new Client(httpClient);
 			}
 
