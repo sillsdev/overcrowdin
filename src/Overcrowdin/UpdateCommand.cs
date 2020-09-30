@@ -15,6 +15,9 @@ namespace Overcrowdin
 		[Verb("updatefiles", HelpText = "Update files in Crowdin. Will use crowdin.json or files passed in as arguments.")]
 		public class Options : GlobalOptions, IFileOptions
 		{
+			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			public string Branch { get; set; }
+
 			[Option('f', "file", Required = false, HelpText = "Path to a file to upload")]
 			public IEnumerable<string> Files { get; set; }
 			// TODO: Add option for update approval -- default to Update_as_unapproved

@@ -1,0 +1,20 @@
+root = true
+
+# Defaults
+[*]
+indent_style = tab
+indent_size = tab
+tab_width = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = false
+max_line_length = 151
+
+# Settings Visual Studio uses for generated files
+[*.{csproj,resx,settings,vcxproj*,vdproj,xml,json}]
+indent_style = space
+indent_size = 2
+
+# Generated file
+[*.sln]
+end_of_line = crlf

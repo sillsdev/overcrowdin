@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
@@ -160,6 +160,71 @@ namespace OvercrowdinTests
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } }, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
+		}
+
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public async void AddCommandWithCommandLineToBranch(bool isBranch)
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string inputFileName = "test.txt";
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string projectId = "testcrowdinproject";
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			var branch = isBranch ? "branchName" : null;
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
+			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
+			_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+					It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName) && fp.Branch == branch)))
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable();
+			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
+				new AddCommand.Options {Branch = branch, Files = new[] {inputFileName}}, mockFileSystem);
+			_mockClient.Verify();
+			Assert.Equal(0, result);
+		}
+
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public async void AddCommandWithConfigFileToBranch(bool isBranch)
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string inputFileName = "test.txt";
+			const string apiKeyEnvVar = "KEYEXISTS";
+			const string projectId = "testcrowdinproject";
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			var branch = isBranch ? "branchName" : null;
+			mockFileSystem.File.WriteAllText(inputFileName, "mock contents");
+			dynamic configJson = new JObject();
+
+			configJson.project_id = projectId;
+			configJson.api_key_env = apiKeyEnvVar;
+			configJson.base_path = ".";
+			if (isBranch)
+			{
+				configJson.branch = branch;
+			}
+			dynamic file = new JObject();
+			file.source = inputFileName;
+			var files = new JArray { file };
+			configJson.files = files;
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+
+				// Set up only the expected call to AddFile (any calls without the expected file params will return null)
+				_mockClient.Setup(x => x.AddFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<AddFileParameters>(fp => fp.Files.ContainsKey(inputFileName) && fp.Branch == branch)))
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable();
+				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem);
+				_mockClient.Verify();
+				Assert.Equal(0, result);
+			}
 		}
 	}
 }

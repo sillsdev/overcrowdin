@@ -5,7 +5,7 @@ namespace Overcrowdin
 	/// <summary>
 	/// Options that apply to file-related verbs
 	/// </summary>
-	public interface IFileOptions
+	public interface IFileOptions : IBranchOptions
 	{
 		IEnumerable<string> Files { get; set; }
 	}

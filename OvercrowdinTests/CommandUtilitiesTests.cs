@@ -87,7 +87,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -106,7 +106,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -127,7 +127,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -150,7 +150,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -171,7 +171,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -195,7 +195,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>()));
+				var e = Assert.Throws<NotSupportedException>(() => CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>()));
 				Assert.Contains(subPath, e.Message);
 			}
 		}
@@ -218,7 +218,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Equal(2, fileParamsList.Count);
@@ -249,7 +249,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, folders);
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, folders);
 			}
 
 			Assert.Single(fileParamsList);
@@ -277,7 +277,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, folders);
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, folders);
 			}
 
 			Assert.Single(fileParamsList);
@@ -301,7 +301,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, folders);
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, folders);
 			}
 
 			Assert.Single(fileParamsList);
@@ -354,7 +354,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Equal(2, fileParamsList.Count);
@@ -393,7 +393,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -414,7 +414,7 @@ namespace OvercrowdinTests
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				mockFileSystem.Directory.SetCurrentDirectory("C:/jane/doe");
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -437,7 +437,7 @@ namespace OvercrowdinTests
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				mockFileSystem.Directory.SetCurrentDirectory(currentDir);
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -482,7 +482,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Equal(2, fileParamsList.Count);
@@ -650,7 +650,7 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, fileParamsList, new SortedSet<string>());
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
 			Assert.Single(fileParamsList);
@@ -685,12 +685,12 @@ namespace OvercrowdinTests
 				{
 					case "Add":
 						var addFileParamsList = new List<AddFileParameters>();
-						CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, addFileParamsList, new SortedSet<string>());
+						CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, addFileParamsList, new SortedSet<string>());
 						fileParamsList.AddRange(addFileParamsList);
 						break;
 					case "Update":
 						var updateFileParamsList = new List<UpdateFileParameters>();
-						CommandUtilities.GetFilesFromConfiguration(config, mockFileSystem, updateFileParamsList, new SortedSet<string>());
+						CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, updateFileParamsList, new SortedSet<string>());
 						fileParamsList.AddRange(updateFileParamsList);
 						break;
 				}

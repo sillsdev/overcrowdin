@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Net;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
-using Crowdin.Api;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 
@@ -43,14 +42,14 @@ namespace Overcrowdin
 		internal static async Task<int> CreateFolderInCrowdin(ICrowdinClient crowdin, IConfiguration config, GlobalOptions opts, string folder, IFileSystem fs)
 		{
 			var projectId = config["project_identifier"];
-			var projectKey = Environment.GetEnvironmentVariable(config["api_key_env"]);
-			var projectCredentials = new ProjectCredentials { ProjectKey = projectKey };
-			var createFolderParams = new CreateFolderParameters {Name = folder};
+			var credentials = CommandUtilities.GetCredentialsFromConfiguration(config);
+			var branch = (opts as IBranchOptions)?.Branch ?? config["branch"];
+			var createFolderParams = new CreateFolderParameters {Name = folder, Branch = branch, IsBranch = !string.IsNullOrEmpty(branch)};
 			if (opts.Verbose)
 			{
 				Console.WriteLine("Creating folder {0}...", folder);
 			}
-			var result = await crowdin.CreateFolder(projectId, projectCredentials, createFolderParams);
+			var result = await crowdin.CreateFolder(projectId, credentials, createFolderParams);
 			if (result.IsSuccessStatusCode)
 			{
 				if (opts.Verbose)

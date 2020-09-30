@@ -41,6 +41,7 @@ namespace Overcrowdin
 			{
 				var fileParams = new T
 				{
+					Branch = opts.Branch ?? config["branch"],
 					Files = new Dictionary<string, FileInfo>()
 				};
 				foreach (var file in opts.Files)
@@ -56,7 +57,7 @@ namespace Overcrowdin
 			}
 			else
 			{
-				GetFilesFromConfiguration(config, fs, fileParamsList, folders);
+				GetFilesFromConfiguration(config, opts, fs, fileParamsList, folders);
 			}
 
 			AddParentFolders(folders);
@@ -70,7 +71,7 @@ namespace Overcrowdin
 		///  }
 		/// ]
 		/// </summary>
-		public static void GetFilesFromConfiguration<T>(IConfiguration config, IFileSystem fs,
+		public static void GetFilesFromConfiguration<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
 			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
 		{
 			var basePath = config.GetValue<string>("base_path");
@@ -98,6 +99,8 @@ namespace Overcrowdin
 
 				var fileParams = new T
 				{
+					// REVIEW (Hasso) 2020.09: should we allow a branch from Opts when getting files from the config file?
+					Branch = opts?.Branch ?? config["branch"],
 					Files = new Dictionary<string, FileInfo>(),
 					ExportPatterns = new Dictionary<string, string>()
 				};

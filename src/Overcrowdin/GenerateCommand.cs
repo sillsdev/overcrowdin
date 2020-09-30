@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using CommandLine;
@@ -22,10 +22,9 @@ namespace Overcrowdin
 			{
 				var crowdin = CrowdinCommand.GetClient();
 				var projectCredentials = new ProjectCredentials {ProjectKey = key};
-				ProjectInfo project;
 				try
 				{
-					project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
+					var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
 					dynamic jsonObject = new JObject();
 					jsonObject.project_identifier = opts.Identifier;
 					jsonObject.api_key_env = opts.Key;
@@ -54,21 +53,22 @@ namespace Overcrowdin
 
 		private static void AddFileOrDirectory(string path, ProjectNode node, JArray jsonFiles)
 		{
-			if (node is ProjectFile)
+			switch (node)
 			{
-				var projectFile = node as ProjectFile;
-				dynamic file = new JObject();
-				// Not using Path.Combine because I want the same behavior on Linux and Windows
-				file.source = path + "/" + projectFile.Name;
-				file.translation = "/yourlocalefolder/%use_some_crowdin_lang_code%/%original_file_name%";
-				jsonFiles.Add(file);
-			}
-
-			if (node is ProjectFolder)
-			{
-				var projectFolder = node as ProjectFolder;
-
-				foreach (var file in projectFolder.Files) AddFileOrDirectory(path + "/" + node.Name, file, jsonFiles);
+				case ProjectFile projectFile:
+				{
+					dynamic file = new JObject();
+					// Not using Path.Combine because I want the same behavior on Linux and Windows
+					file.source = path + "/" + projectFile.Name;
+					file.translation = "/yourlocalefolder/%use_some_crowdin_lang_code%/%original_file_name%";
+					jsonFiles.Add(file);
+					break;
+				}
+				case ProjectFolder projectFolder:
+				{
+					foreach (var file in projectFolder.Files) AddFileOrDirectory(path + "/" + projectFolder.Name, file, jsonFiles);
+					break;
+				}
 			}
 		}
 
