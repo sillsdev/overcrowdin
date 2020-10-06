@@ -101,18 +101,25 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void CreateFolderForBranch(bool isBranch)
+		public async void CreateFolderForBranch(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
-			var branchName = isBranch ? Branch : null;
+			var branchName = makeBranch ? Branch : null;
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(ProjectId);
 			// Set up only the expected call to CreateFolder (any calls without the expected folder params will return null)
 			_mockClient.Setup(x => x.CreateFolder(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
-					It.Is<CreateFolderParameters>(fp => NewFolderName.Equals(fp.Name) && VerifyBranchParams(fp, branchName))))
+					It.Is<CreateFolderParameters>(fp => NewFolderName.Equals(fp.Name) && fp.Branch == branchName && TestUtils.FalseOrUnset(fp.IsBranch))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
+			if (makeBranch)
+			{
+				_mockClient.Setup(x => x.CreateFolder(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<CreateFolderParameters>(fp => branchName.Equals(fp.Name) && TestUtils.True(fp.IsBranch) && string.IsNullOrEmpty(fp.Branch))))
+					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+					.Verifiable();
+			}
 			var opts = new CreateFolderOptions {Branch = branchName};
 			var folders = new SortedSet<string> {NewFolderName};
 			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
@@ -130,7 +137,11 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["branch"]).Returns(Branch);
 			// Set up only the expected call to CreateFolder (any calls without the expected folder params will return null)
 			_mockClient.Setup(x => x.CreateFolder(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
-					It.Is<CreateFolderParameters>(fp => NewFolderName.Equals(fp.Name) && VerifyBranchParams(fp, Branch))))
+					It.Is<CreateFolderParameters>(fp => NewFolderName.Equals(fp.Name) && Branch.Equals(fp.Branch) && TestUtils.FalseOrUnset(fp.IsBranch))))
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable();
+			_mockClient.Setup(x => x.CreateFolder(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+					It.Is<CreateFolderParameters>(fp => Branch.Equals(fp.Name) && TestUtils.True(fp.IsBranch) && string.IsNullOrEmpty(fp.Branch))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
 			var opts = new CreateFolderOptions();
@@ -151,7 +162,11 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["branch"]).Returns(Branch);
 			// Set up only the expected call to CreateFolder (any calls without the expected folder params will return null)
 			_mockClient.Setup(x => x.CreateFolder(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
-					It.Is<CreateFolderParameters>(fp => NewFolderName.Equals(fp.Name) && VerifyBranchParams(fp, cliBranch))))
+					It.Is<CreateFolderParameters>(fp => NewFolderName.Equals(fp.Name) && cliBranch.Equals(fp.Branch) && TestUtils.FalseOrUnset(fp.IsBranch))))
+				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
+				.Verifiable();
+			_mockClient.Setup(x => x.CreateFolder(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+					It.Is<CreateFolderParameters>(fp => cliBranch.Equals(fp.Name) && TestUtils.True(fp.IsBranch) && string.IsNullOrEmpty(fp.Branch))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
 			var opts = new CreateFolderOptions {Branch = cliBranch};
@@ -159,13 +174,6 @@ namespace OvercrowdinTests
 			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
-		}
-
-		private static bool VerifyBranchParams(CreateFolderParameters cfParams, string branch)
-		{
-			return string.IsNullOrEmpty(branch)
-				? string.IsNullOrEmpty(cfParams.Branch) && (!cfParams.IsBranch.HasValue || !cfParams.IsBranch.Value)
-				: branch.Equals(cfParams.Branch) && cfParams.IsBranch.HasValue && cfParams.IsBranch.Value;
 		}
 
 		private class CreateFolderOptions : GlobalOptions, IBranchOptions
