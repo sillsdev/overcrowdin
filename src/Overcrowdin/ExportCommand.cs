@@ -14,20 +14,33 @@ namespace Overcrowdin
 	public class ExportCommand
 	{
 		[Verb("exporttranslations", HelpText = "Export the latest translations from Crowdin (does not download them)")]
-		public class Options : GlobalOptions
+		public class Options : GlobalOptions, IBranchOptions
 		{
+			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			public string Branch { get; set; }
+
 			[Option ('a', Required = false, Default = false, HelpText = "Asynchronous export (return without waiting for the export to complete).")]
 			public bool Asynchronous { get; set; }
+
+			public Options Clone()
+			{
+				return new Options
+				{
+					Asynchronous = Asynchronous,
+					Branch = Branch,
+					Verbose = Verbose
+				};
+			}
 		}
 
 		/// <summary>Number of milliseconds in a minute (60,000ms)</summary>
 		private const int MillisPerMinute = 60000;
 
-		private static readonly XmlSerializer _statusSerializer;
+		private static readonly XmlSerializer StatusSerializer;
 
 		static ExportCommand()
 		{
-			_statusSerializer = new XmlSerializer(typeof(ExportStatus));
+			StatusSerializer = new XmlSerializer(typeof(ExportStatus));
 		}
 
 		public static async Task<int> ExportCrowdinTranslations(IConfiguration config, Options opts)
@@ -39,38 +52,40 @@ namespace Overcrowdin
 				return 1;
 			}
 
-			return await ExportCrowdinTranslations(projectId, credentials, opts.Verbose, opts.Asynchronous);
+			var computedOpts = opts.Clone();
+			computedOpts.Branch = CommandUtilities.Branch(config, opts);
+			return await ExportCrowdinTranslations(projectId, credentials, computedOpts);
 		}
 
-		public static async Task<int> ExportCrowdinTranslations(string projectId, Credentials credentials, bool verbose, bool asynchronous = false)
+		public static async Task<int> ExportCrowdinTranslations(string projectId, Credentials credentials, Options opts)
 		{
 			var crowdin = CrowdinCommand.GetClient();
-			var exportResponse = await crowdin.ExportTranslation(projectId, credentials, new ExportTranslationParameters {Async = true});
+			var exportResponse = await crowdin.ExportTranslation(projectId, credentials, new ExportTranslationParameters {Async = true, Branch = opts.Branch});
 			if (exportResponse.IsSuccessStatusCode)
-				return asynchronous ? 0 : await AwaitCrowdinBuild(crowdin, projectId, credentials, verbose);
+				return opts.Asynchronous ? 0 : await AwaitCrowdinBuild(crowdin, projectId, credentials, opts);
 
 			Console.WriteLine("Failed to export translations.");
-			WriteResponseIf(verbose, exportResponse);
+			WriteResponseIf(opts.Verbose, exportResponse);
 			return 1;
 		}
 
 		/// <summary>
 		/// Wait until the Crowdin build is complete, checking status every minute. Tolerate a few errors (in case of inconsistent internet)
 		/// </summary>
-		private static async Task<int> AwaitCrowdinBuild(ICrowdinClient crowdin, string projectId, Credentials credentials, bool verbose)
+		private static async Task<int> AwaitCrowdinBuild(ICrowdinClient crowdin, string projectId, Credentials credentials, Options opts)
 		{
 			HttpResponseMessage statusResponse = null;
 			for (int consecutiveFailures = 0, percentComplete = -1; consecutiveFailures < 12;)
 			{
-				statusResponse = await crowdin.GetExportStatus(projectId, credentials, new GetTranslationExportStatusParameters());
+				statusResponse = await crowdin.GetExportStatus(projectId, credentials, new GetTranslationExportStatusParameters{Branch = opts.Branch});
 				if (statusResponse.IsSuccessStatusCode)
 				{
 					consecutiveFailures = 0;
 					using (var xmlReader = XmlReader.Create(await statusResponse.Content.ReadAsStreamAsync()))
 					{
-						if (_statusSerializer.CanDeserialize(xmlReader))
+						if (StatusSerializer.CanDeserialize(xmlReader))
 						{
-							var status = (ExportStatus)_statusSerializer.Deserialize(xmlReader);
+							var status = (ExportStatus)StatusSerializer.Deserialize(xmlReader);
 							if (status.Status == ExportStatus.Finished)
 							{
 								Console.WriteLine("Finished exporting translations.");
@@ -82,27 +97,27 @@ namespace Overcrowdin
 								return 1;
 							}
 							percentComplete = status.Progress;
-							var verboseMessage = verbose ? $"\tpresently exporting {status.CurrentFile} in {status.CurrentLanguage}" : string.Empty;
+							var verboseMessage = opts.Verbose ? $"\tpresently exporting {status.CurrentFile} in {status.CurrentLanguage}" : string.Empty;
 							Console.WriteLine($"{percentComplete}% complete exporting translations...{verboseMessage}");
 						}
 						else
 						{
 							consecutiveFailures++;
-							WriteResponseIf(verbose, statusResponse);
+							WriteResponseIf(opts.Verbose, statusResponse);
 						}
 					}
 				}
 				else
 				{
 					consecutiveFailures++;
-					WriteResponseIf(verbose, statusResponse);
+					WriteResponseIf(opts.Verbose, statusResponse);
 				}
 				Thread.Sleep(MillisPerMinute);
 			}
 
 			// Too many errors; give up.
 			Console.WriteLine("Failed to export translations.");
-			WriteResponseIf(verbose, statusResponse);
+			WriteResponseIf(opts.Verbose, statusResponse);
 			return 1;
 		}
 

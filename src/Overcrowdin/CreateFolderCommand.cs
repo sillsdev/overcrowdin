@@ -22,7 +22,7 @@ namespace Overcrowdin
 
 		public static async Task<int> CreateFoldersInCrowdin(IConfiguration config, GlobalOptions opts, ISet<string> folders, IFileSystem fs)
 		{
-			var branch = (opts as IBranchOptions)?.Branch ?? config["branch"];
+			var branch = CommandUtilities.Branch(config, opts as IBranchOptions);
 			if (folders.Count == 0 && string.IsNullOrEmpty(branch))
 			{
 				return 0;

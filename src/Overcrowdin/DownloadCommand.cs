@@ -15,8 +15,11 @@ namespace Overcrowdin
 	public class DownloadCommand
 	{
 		[Verb("download", HelpText = "Download the latest translations from Crowdin")]
-		public class Options : GlobalOptions
+		public class Options : GlobalOptions, IBranchOptions
 		{
+			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			public string Branch { get; set; }
+
 			[Option('l', Required = false, Default ="all", HelpText = "The language to download the translations for or 'all' to download for every language.")]
 			public string Language { get; set; }
 
@@ -48,12 +51,14 @@ namespace Overcrowdin
 				return 1;
 			}
 
+			var branch = CommandUtilities.Branch(config, opts);
 			var outputFile = Path.Combine(config["base_path"], opts.Filename);
 
 			try
 			{
 				// Export translations if requested
-				if (opts.ExportFirst && 0 != await ExportCommand.ExportCrowdinTranslations(projectId, credentials, opts.Verbose))
+				if (opts.ExportFirst && 0 != await ExportCommand.ExportCrowdinTranslations(projectId, credentials,
+					new ExportCommand.Options {Asynchronous = false, Branch = branch, Verbose = opts.Verbose}))
 				{
 					return 1;
 				}
@@ -64,7 +69,7 @@ namespace Overcrowdin
 					try
 					{
 						var downloadResponse = await crowdin.DownloadTranslation(projectId,
-							credentials, new DownloadTranslationParameters {Package = opts.Language});
+							credentials, new DownloadTranslationParameters {Package = opts.Language, Branch = branch});
 						if (downloadResponse.IsSuccessStatusCode)
 						{
 							using (var downloadedFile = fs.FileStream.Create(outputFile, FileMode.Create))
