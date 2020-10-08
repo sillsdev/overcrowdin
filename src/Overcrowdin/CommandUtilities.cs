@@ -41,7 +41,7 @@ namespace Overcrowdin
 			{
 				var fileParams = new T
 				{
-					Branch = Branch(config, opts),
+					Branch = GetBranch(config, opts),
 					Files = new Dictionary<string, FileInfo>()
 				};
 				foreach (var file in opts.Files)
@@ -100,7 +100,7 @@ namespace Overcrowdin
 				var fileParams = new T
 				{
 					// REVIEW (Hasso) 2020.09: should we allow a branch from Opts when getting files from the config file?
-					Branch = Branch(config, opts),
+					Branch = GetBranch(config, opts),
 					Files = new Dictionary<string, FileInfo>(),
 					ExportPatterns = new Dictionary<string, string>()
 				};
@@ -236,7 +236,7 @@ namespace Overcrowdin
 			return batchedFiles;
 		}
 
-		public static string Branch(IConfiguration config, IBranchOptions opts)
+		public static string GetBranch(IConfiguration config, IBranchOptions opts)
 		{
 			return opts?.Branch ?? config["branch"];
 		}

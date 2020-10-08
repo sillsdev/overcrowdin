@@ -53,7 +53,7 @@ namespace Overcrowdin
 			}
 
 			var computedOpts = opts.Clone();
-			computedOpts.Branch = CommandUtilities.Branch(config, opts);
+			computedOpts.Branch = CommandUtilities.GetBranch(config, opts);
 			return await ExportCrowdinTranslations(projectId, credentials, computedOpts);
 		}
 

@@ -51,7 +51,7 @@ namespace Overcrowdin
 				return 1;
 			}
 
-			var branch = CommandUtilities.Branch(config, opts);
+			var branch = CommandUtilities.GetBranch(config, opts);
 			var outputFile = Path.Combine(config["base_path"], opts.Filename);
 
 			try
