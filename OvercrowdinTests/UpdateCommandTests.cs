@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
@@ -33,38 +33,46 @@ namespace OvercrowdinTests
 			Assert.Equal(1, result);
 		}
 
-		[Fact]
-		public async void UpdateCommandWithCommandLine()
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public async void UpdateCommandWithCommandLine(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
 			const string projectId = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			var branch = makeBranch ? "branchName" : null;
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
 			// Set up only the expected call to UpdateFile (any calls without the expected file params will return null)
 			_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
 				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 				.Verifiable();
-			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } }, mockFileSystem);
+			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object,
+				new UpdateCommand.Options {Branch = branch, Files = new[] {inputFileName}}, mockFileSystem);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
 
-		[Fact]
-		public async void UpdateCommandWithConfigFile()
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public async void UpdateCommandWithConfigFile(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
 			const string projectId = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			var branch = makeBranch ? "branchName" : string.Empty;
 			mockFileSystem.File.WriteAllText(inputFileName, "mock contents");
 			dynamic configJson = new JObject();
 
 			configJson.project_id = projectId;
 			configJson.api_key_env = apiKeyEnvVar;
+			configJson.branch = branch;
 			configJson.base_path = ".";
 			dynamic file = new JObject();
 			file.source = inputFileName;
@@ -77,7 +85,8 @@ namespace OvercrowdinTests
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
 				// Set up only the expected call to UpdateFile (any calls without the expected file params will return null)
-				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
+				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
+						It.Is<UpdateFileParameters>(fp => fp.Branch == branch && fp.Files.ContainsKey(inputFileName))))
 					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
 					.Verifiable();
 				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);

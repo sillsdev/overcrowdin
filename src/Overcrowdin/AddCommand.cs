@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Linq;
@@ -15,6 +15,9 @@ namespace Overcrowdin
 		[Verb("addfiles", HelpText = "Add files to Crowdin.")]
 		public class Options : GlobalOptions, IFileOptions
 		{
+			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			public string Branch { get; set; }
+
 			[Option('f', "file", Required = false, HelpText = "Path(s) to a file to upload")]
 			public IEnumerable<string> Files { get; set; }
 		}
