@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO.Abstractions;
 using System.Net;
 using System.Threading.Tasks;
 using System.Xml;
@@ -13,14 +12,14 @@ namespace Overcrowdin
 {
 	public sealed class CreateFolderCommand
 	{
-		private static readonly XmlSerializer _errorSerializer;
+		private static readonly XmlSerializer ErrorSerializer;
 
 		static CreateFolderCommand()
 		{
-			_errorSerializer = new XmlSerializer(typeof(Error));
+			ErrorSerializer = new XmlSerializer(typeof(Error));
 		}
 
-		public static async Task<int> CreateFoldersInCrowdin(IConfiguration config, GlobalOptions opts, ISet<string> folders, IFileSystem fs)
+		public static async Task<int> CreateFoldersInCrowdin(IConfiguration config, GlobalOptions opts, ISet<string> folders)
 		{
 			var branch = CommandUtilities.GetBranch(config, opts as IBranchOptions);
 			if (folders.Count == 0 && string.IsNullOrEmpty(branch))
@@ -44,14 +43,14 @@ namespace Overcrowdin
 			{
 				while (status == 0 && foldersE.MoveNext())
 				{
-					status = await CreateFolderInCrowdin(crowdin, config, opts, foldersE.Current, branch, fs);
+					status = await CreateFolderInCrowdin(crowdin, config, opts, foldersE.Current, branch);
 				}
 				return status;
 			}
 		}
 
 		private static async Task<int> CreateFolderInCrowdin(ICrowdinClient crowdin, IConfiguration config, GlobalOptions opts,
-			string folder, string branch, IFileSystem fs)
+			string folder, string branch)
 		{
 			var projectId = config["project_identifier"];
 			var credentials = CommandUtilities.GetCredentialsFromConfiguration(config);
@@ -86,14 +85,16 @@ namespace Overcrowdin
 			}
 			else
 			{
-				if (result.StatusCode == HttpStatusCode.InternalServerError)
+				// When this was written in 2020.01, the status code for existing folders was 500. In 2020.10, we noticed that it had changed to 400.
+				// Ideally, Crowdin would not change their API like this. Since they have, we may wish to safely parse the XML regardless of the status code.
+				if (result.StatusCode == HttpStatusCode.BadRequest || result.StatusCode == HttpStatusCode.InternalServerError)
 				{
 					// ENHANCE (Hasso) 2020.01: Extracting error codes could be refactored into a method for other clients
 					using (var xmlReader = XmlReader.Create(await result.Content.ReadAsStreamAsync()))
 					{
-						if (_errorSerializer.CanDeserialize(xmlReader))
+						if (ErrorSerializer.CanDeserialize(xmlReader))
 						{
-							var error = (Error)_errorSerializer.Deserialize(xmlReader);
+							var error = (Error)ErrorSerializer.Deserialize(xmlReader);
 							if (error.Code == (int) CrowdinErrorCode.DirectoryAlreadyExists)
 							{
 								if (opts.Verbose)

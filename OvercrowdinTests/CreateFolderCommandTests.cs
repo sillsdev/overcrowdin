@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -23,14 +22,13 @@ namespace OvercrowdinTests
 		public async void CreateFolders_NoFolders_Succeeds()
 		{
 			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, new CreateFolderOptions(),
-				new HashSet<string>(), new MockFileSystem());
+				new HashSet<string>());
 			Assert.Equal(0, result);
 		}
 
 		[Fact]
 		public async void CreateFolder()
 		{
-			var mockFileSystem = new MockFileSystem();
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(ProjectId);
@@ -40,7 +38,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -48,7 +46,6 @@ namespace OvercrowdinTests
 		[Fact]
 		public async void CreatePreexistingFolderSucceeds()
 		{
-			var mockFileSystem = new MockFileSystem();
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(ProjectId);
@@ -66,7 +63,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -74,12 +71,11 @@ namespace OvercrowdinTests
 		[Fact]
 		public async void CreateFolderWithBadCharactersFails()
 		{
-			var mockFileSystem = new MockFileSystem();
 			const string badFolderName = ">bad*Dir?";
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(ProjectId);
-			var mockResult = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+			var mockResult = new HttpResponseMessage(HttpStatusCode.BadRequest)
 			{
 				Content = new StringContent($@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <error>
@@ -93,7 +89,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {badFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(1, result);
 		}
@@ -103,7 +99,6 @@ namespace OvercrowdinTests
 		[InlineData(false)]
 		public async void CreateFolderForBranch(bool makeBranch)
 		{
-			var mockFileSystem = new MockFileSystem();
 			var branchName = makeBranch ? Branch : null;
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
@@ -122,7 +117,7 @@ namespace OvercrowdinTests
 			}
 			var opts = new CreateFolderOptions {Branch = branchName};
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -130,7 +125,6 @@ namespace OvercrowdinTests
 		[Fact]
 		public async void CreateFolderForBranchFromConfig()
 		{
-			var mockFileSystem = new MockFileSystem();
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(ProjectId);
@@ -146,7 +140,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -154,7 +148,6 @@ namespace OvercrowdinTests
 		[Fact]
 		public async void CreateFolderForBranchPrefersCLI()
 		{
-			var mockFileSystem = new MockFileSystem();
 			const string cliBranch = "branchFromCLI";
 			Environment.SetEnvironmentVariable(ApiKeyEnvVar, "fakecrowdinapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(ApiKeyEnvVar);
@@ -171,7 +164,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions {Branch = cliBranch};
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
