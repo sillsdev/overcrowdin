@@ -23,7 +23,7 @@ namespace OvercrowdinTests
 		public async void CreateFolders_NoFolders_Succeeds()
 		{
 			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, new CreateFolderOptions(),
-				new HashSet<string>(), new MockFileSystem());
+				new HashSet<string>());
 			Assert.Equal(0, result);
 		}
 
@@ -40,7 +40,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -66,7 +66,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -93,7 +93,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {badFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(1, result);
 		}
@@ -122,7 +122,7 @@ namespace OvercrowdinTests
 			}
 			var opts = new CreateFolderOptions {Branch = branchName};
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -146,7 +146,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions();
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
@@ -171,7 +171,7 @@ namespace OvercrowdinTests
 				.Verifiable();
 			var opts = new CreateFolderOptions {Branch = cliBranch};
 			var folders = new SortedSet<string> {NewFolderName};
-			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders, mockFileSystem);
+			var result = await CreateFolderCommand.CreateFoldersInCrowdin(_mockConfig.Object, opts, folders);
 			_mockClient.Verify();
 			Assert.Equal(0, result);
 		}
