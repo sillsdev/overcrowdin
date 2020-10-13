@@ -43,7 +43,7 @@ namespace Overcrowdin
 			}
 
 			// create folders
-			if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate, fs))
+			if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate))
 			{
 				return 1;
 			}
