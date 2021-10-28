@@ -11,6 +11,7 @@ namespace Overcrowdin
 {
 	/// <summary>
 	///    This class will handle the command line arg for generating a configuration file for a Crowdin project
+	/// THIS CODE IS NOT YET WORKING!!!
 	/// </summary>
 	public class GenerateCommand
 	{
@@ -21,10 +22,12 @@ namespace Overcrowdin
 			if (!string.IsNullOrEmpty(key))
 			{
 				var crowdin = CrowdinCommand.GetClient();
-				var projectCredentials = new ProjectCredentials {ProjectKey = key};
+				// var projectCredentials = new ProjectCredentials {ProjectKey = key};
+				var accountCredentials = new AccountCredentials { AccountKey = key, LoginName = "todd_hoatson" };
 				try
 				{
-					var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
+					// var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
+					var project = await crowdin.GetProjectInfo(opts.Identifier, accountCredentials);
 					dynamic jsonObject = new JObject();
 					jsonObject.project_identifier = opts.Identifier;
 					jsonObject.api_key_env = opts.Key;
