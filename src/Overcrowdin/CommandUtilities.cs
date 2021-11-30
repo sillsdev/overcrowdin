@@ -31,14 +31,15 @@ namespace Overcrowdin
 			}
 
 			var userNameEnvVar = config["user_identifier_env"];
+			var userName = "";
 			if (string.IsNullOrEmpty(userNameEnvVar))
 			{
 				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'user_identifier_env' " +
 								"(the environment variable containing the user name for your Crowdin project).");
 				// Don't fail, just keep going - some grandfathered projects don't need the user name
 			}
-
-			var userName = Environment.GetEnvironmentVariable(userNameEnvVar);
+			else
+				userName = Environment.GetEnvironmentVariable(userNameEnvVar);
 
 			if (!String.IsNullOrEmpty(userName))
 				return new AccountCredentials { AccountKey = projectKey, LoginName = userName };

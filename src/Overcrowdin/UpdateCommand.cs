@@ -65,7 +65,7 @@ namespace Overcrowdin
 			}
 			else
 			{
-				Console.WriteLine("Failure updating files.");
+				Console.WriteLine("Failure updating file:  " + updateFileParametersList[i - 1].Files.First().Value.FullName);
 				// A problem file does not cause Crowdin to roll back a batch. Alert the user if some files may have been updated.
 				if (i > 1 || updateFileParametersList[0].Files.Count > 1)
 				{

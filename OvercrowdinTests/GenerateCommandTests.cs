@@ -57,6 +57,7 @@ namespace OvercrowdinTests
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
 				new GenerateCommand.Options
 					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier}, mockFileSystem);
+			Assert.Equal(0, result);
 			var mockOutputFile = mockFileSystem.GetFile(outputFileName).TextContents;
 			var contents = JObject.Parse(mockOutputFile);
 			Assert.True(contents.ContainsKey("project_identifier"));
@@ -65,7 +66,6 @@ namespace OvercrowdinTests
 			Assert.Equal(contents["project_identifier"], projectIdentifier);
 			Assert.Equal(contents["api_key_env"], apiKeyEnvVar);
 			Assert.Equal(contents["base_path"], basePath);
-			Assert.Equal(0, result);
 		}
 
 		[Fact]
@@ -90,6 +90,7 @@ namespace OvercrowdinTests
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
 				new GenerateCommand.Options
 					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier}, mockFileSystem);
+			Assert.Equal(0, result);
 			var mockOutputFile = mockFileSystem.GetFile(outputFileName).TextContents;
 			var contents = JObject.Parse(mockOutputFile);
 			Assert.True(contents.ContainsKey("project_identifier"));
@@ -98,7 +99,6 @@ namespace OvercrowdinTests
 			Assert.Equal(contents["project_identifier"], projectIdentifier);
 			Assert.Equal(contents["api_key_env"], apiKeyEnvVar);
 			Assert.Equal(contents["base_path"], basePath);
-			Assert.Equal(0, result);
 		}
 	}
 }

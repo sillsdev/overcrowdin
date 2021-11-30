@@ -28,6 +28,9 @@ namespace Overcrowdin
 				{
 					// var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
 					var project = await crowdin.GetProjectInfo(opts.Identifier, accountCredentials);
+					if (project == null)
+						return success;
+
 					dynamic jsonObject = new JObject();
 					jsonObject.project_identifier = opts.Identifier;
 					jsonObject.api_key_env = opts.Key;
