@@ -52,11 +52,11 @@ namespace OvercrowdinTests
 			}
 
 			Assert.NotNull(projectInfo); // verify that the test data is good
-			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<ProjectCredentials>()))
+			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<AccountCredentials>()))
 				.Returns(Task.FromResult(projectInfo));
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
 				new GenerateCommand.Options
-					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier}, mockFileSystem);
+					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier, User = "todd"}, mockFileSystem);
 			Assert.Equal(0, result);
 			var mockOutputFile = mockFileSystem.GetFile(outputFileName).TextContents;
 			var contents = JObject.Parse(mockOutputFile);
@@ -85,11 +85,11 @@ namespace OvercrowdinTests
 			}
 
 			Assert.NotNull(projectInfo); // verify that the test data is good
-			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<ProjectCredentials>()))
+			_mockClient.Setup(x => x.GetProjectInfo(It.IsAny<string>(), It.IsAny<AccountCredentials>()))
 				.Returns(Task.FromResult(projectInfo));
 			var result = await GenerateCommand.GenerateConfigFromCrowdin(_mockConfig.Object,
 				new GenerateCommand.Options
-					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier}, mockFileSystem);
+					{BasePath = basePath, Key = apiKeyEnvVar, OutputFile = outputFileName, Identifier = projectIdentifier, User = "todd"}, mockFileSystem);
 			Assert.Equal(0, result);
 			var mockOutputFile = mockFileSystem.GetFile(outputFileName).TextContents;
 			var contents = JObject.Parse(mockOutputFile);

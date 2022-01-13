@@ -2,7 +2,9 @@ using System;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using CommandLine;
+using CommandLine.Text;
 using Crowdin.Api;
+using Crowdin.Api.Protocol;
 using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
@@ -11,7 +13,6 @@ namespace Overcrowdin
 {
 	/// <summary>
 	///    This class will handle the command line arg for generating a configuration file for a Crowdin project
-	/// THIS CODE IS NOT YET WORKING!!!
 	/// </summary>
 	public class GenerateCommand
 	{
@@ -23,7 +24,7 @@ namespace Overcrowdin
 			{
 				var crowdin = CrowdinCommand.GetClient();
 				// var projectCredentials = new ProjectCredentials {ProjectKey = key};
-				var accountCredentials = new AccountCredentials { AccountKey = key, LoginName = "todd_hoatson" };
+				var accountCredentials = new AccountCredentials { AccountKey = key, LoginName = opts.User };
 				try
 				{
 					// var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
@@ -88,6 +89,9 @@ namespace Overcrowdin
 			[Option('k', Required = false, Default = "CROWDIN_API_KEY",
 				HelpText = "The environment variable holding the API key for your Crowdin project")]
 			public string Key { get; set; }
+
+			[Option('u', Required = true, HelpText = "The user for Crowdin project API access")]
+			public string User { get; set; }
 
 			[Option('i', Required = true, HelpText = "The Project Identifier for your Crowdin project")]
 			public string Identifier { get; set; }
