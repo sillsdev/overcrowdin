@@ -15,16 +15,16 @@ namespace Overcrowdin
 	{
 		public static Credentials GetCredentialsFromConfiguration(IConfiguration config)
 		{
-			var projectKeyEnvVar = config["api_key_env"];
-			if (string.IsNullOrEmpty(projectKeyEnvVar))
+			var apiKeyEnvVar = config["api_key_env"];
+			if (string.IsNullOrEmpty(apiKeyEnvVar))
 			{
 				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'api_key_env' " +
 					"(the environment variable containing the API Key for your Crowdin project).");
 				return null;
 			}
 
-			var projectKey = Environment.GetEnvironmentVariable(projectKeyEnvVar);
-			if (string.IsNullOrEmpty(projectKey))
+			var apiKey = Environment.GetEnvironmentVariable(apiKeyEnvVar);
+			if (string.IsNullOrEmpty(apiKey))
 			{
 				Console.WriteLine($"Environment variable {config["api_key_env"]} did not contain the API Key for your Crowdin project.");
 				return null;
@@ -42,9 +42,9 @@ namespace Overcrowdin
 				userName = Environment.GetEnvironmentVariable(userNameEnvVar);
 
 			if (!String.IsNullOrEmpty(userName))
-				return new AccountCredentials { AccountKey = projectKey, LoginName = userName };
+				return new AccountCredentials { AccountKey = apiKey, LoginName = userName };
 			else
-				return new ProjectCredentials { ProjectKey = projectKey };
+				return new ProjectCredentials { ProjectKey = apiKey };
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,

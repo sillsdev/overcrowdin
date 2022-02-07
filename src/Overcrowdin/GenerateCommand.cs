@@ -23,11 +23,9 @@ namespace Overcrowdin
 			if (!string.IsNullOrEmpty(key))
 			{
 				var crowdin = CrowdinCommand.GetClient();
-				// var projectCredentials = new ProjectCredentials {ProjectKey = key};
 				var accountCredentials = new AccountCredentials { AccountKey = key, LoginName = opts.User };
 				try
 				{
-					// var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
 					var project = await crowdin.GetProjectInfo(opts.Identifier, accountCredentials);
 					if (project == null)
 						return success;
