@@ -15,22 +15,44 @@ namespace Overcrowdin
 	{
 		public static Credentials GetCredentialsFromConfiguration(IConfiguration config)
 		{
-			var projectKeyEnvVar = config["api_key_env"];
-			if (string.IsNullOrEmpty(projectKeyEnvVar))
+			var apiKeyEnvVar = config["api_key_env"];
+			if (string.IsNullOrEmpty(apiKeyEnvVar))
 			{
 				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'api_key_env' " +
-					"(the environment variable containing the API Key for your Crowdin project).");
+					"(the environment variable containing the API Key for your Crowdin project or account).");
 				return null;
 			}
 
-			var projectKey = Environment.GetEnvironmentVariable(projectKeyEnvVar);
-			if (string.IsNullOrEmpty(projectKey))
+			var apiKey = Environment.GetEnvironmentVariable(apiKeyEnvVar);
+			if (string.IsNullOrEmpty(apiKey))
 			{
-				Console.WriteLine($"Environment variable {config["api_key_env"]} did not contain the API Key for your Crowdin project.");
+				Console.WriteLine($"Environment variable {apiKeyEnvVar} did not contain the API Key for your Crowdin project or account.");
 				return null;
 			}
 
-			return new ProjectCredentials {ProjectKey = projectKey};
+			var userNameEnvVar = config["user_identifier_env"];
+			var userName = "";
+			if (string.IsNullOrEmpty(userNameEnvVar))
+			{
+				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'user_identifier_env' " +
+								"(the environment variable containing your Crowdin username).");
+				// Don't fail; some grandfathered projects don't need the username
+			}
+			else
+			{
+				userName = Environment.GetEnvironmentVariable(userNameEnvVar);
+				if (string.IsNullOrEmpty(userName))
+				{
+					Console.WriteLine($"Environment variable {userNameEnvVar} did not contain your Crowdin username.");
+					return null;
+				}
+			}
+
+			if (string.IsNullOrEmpty(userName))
+			{
+				return new ProjectCredentials {ProjectKey = apiKey};
+			}
+			return new AccountCredentials { AccountKey = apiKey, LoginName = userName };
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,

@@ -18,34 +18,48 @@ namespace Overcrowdin
 		{
 			var success = 1;
 			var key = Environment.GetEnvironmentVariable(opts.Key);
-			if (!string.IsNullOrEmpty(key))
+			var user = Environment.GetEnvironmentVariable(opts.User);
+			if (string.IsNullOrEmpty(key))
 			{
-				var crowdin = CrowdinCommand.GetClient();
-				var projectCredentials = new ProjectCredentials {ProjectKey = key};
-				try
-				{
-					var project = await crowdin.GetProjectInfo(opts.Identifier, projectCredentials);
-					dynamic jsonObject = new JObject();
-					jsonObject.project_identifier = opts.Identifier;
-					jsonObject.api_key_env = opts.Key;
-					jsonObject.base_path = opts.BasePath;
-					var jsonFiles = new JArray();
-					foreach (var file in project.Files)
-					{
-						AddFileOrDirectory(opts.BasePath, file, jsonFiles);
-					}
-					jsonObject.files = jsonFiles;
-					fs.File.WriteAllText(opts.OutputFile, jsonObject.ToString());
-					success = 0;
-				}
-				catch (CrowdinException)
-				{
-					Console.WriteLine("Failed to retrieve project. Check your project id and project key.");
-				}
+				Console.WriteLine("{0} did not contain the API Key for your Crowdin account.", opts.Key);
+				return 1;
 			}
-			else
+			if (string.IsNullOrEmpty(user))
 			{
-				Console.WriteLine("{0} did not contain the API Key for your Crowdin project.", opts.Key);
+				Console.WriteLine("{0} did not contain your Crowdin username.", opts.User);
+				return 1;
+			}
+
+			var crowdin = CrowdinCommand.GetClient();
+			var accountCredentials = new AccountCredentials {AccountKey = key, LoginName = user};
+			try
+			{
+				var project = await crowdin.GetProjectInfo(opts.Identifier, accountCredentials);
+				if (project == null)
+				{
+					Console.WriteLine($"Unable to retrieve info for the project {opts.Identifier} as {user}. " +
+						"Check that the project exists and that you have access.");
+					return 1;
+				}
+
+				dynamic jsonObject = new JObject();
+				jsonObject.project_identifier = opts.Identifier;
+				jsonObject.api_key_env = opts.Key;
+				jsonObject.user_identifier_env = opts.User;
+				jsonObject.base_path = opts.BasePath;
+				var jsonFiles = new JArray();
+				foreach (var file in project.Files)
+				{
+					AddFileOrDirectory(opts.BasePath, file, jsonFiles);
+				}
+
+				jsonObject.files = jsonFiles;
+				fs.File.WriteAllText(opts.OutputFile, jsonObject.ToString());
+				success = 0;
+			}
+			catch (CrowdinException)
+			{
+				Console.WriteLine("Failed to retrieve project. Check your project id and project key.");
 			}
 
 			return success;
@@ -80,8 +94,11 @@ namespace Overcrowdin
 			public ConfigType Type { get; set; }
 
 			[Option('k', Required = false, Default = "CROWDIN_API_KEY",
-				HelpText = "The environment variable holding the API key for your Crowdin project")]
+				HelpText = "The environment variable holding the API key for your Crowdin account")]
 			public string Key { get; set; }
+
+			[Option('u', Required = true, HelpText = "The environment variable holding the username for Crowdin project API access")]
+			public string User { get; set; }
 
 			[Option('i', Required = true, HelpText = "The Project Identifier for your Crowdin project")]
 			public string Identifier { get; set; }
