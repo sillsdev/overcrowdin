@@ -19,14 +19,14 @@ namespace Overcrowdin
 			if (string.IsNullOrEmpty(apiKeyEnvVar))
 			{
 				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'api_key_env' " +
-					"(the environment variable containing the API Key for your Crowdin project).");
+					"(the environment variable containing the API Key for your Crowdin project or account).");
 				return null;
 			}
 
 			var apiKey = Environment.GetEnvironmentVariable(apiKeyEnvVar);
 			if (string.IsNullOrEmpty(apiKey))
 			{
-				Console.WriteLine($"Environment variable {config["api_key_env"]} did not contain the API Key for your Crowdin project.");
+				Console.WriteLine($"Environment variable {apiKeyEnvVar} did not contain the API Key for your Crowdin project or account.");
 				return null;
 			}
 
@@ -35,16 +35,24 @@ namespace Overcrowdin
 			if (string.IsNullOrEmpty(userNameEnvVar))
 			{
 				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'user_identifier_env' " +
-								"(the environment variable containing the user name for your Crowdin project).");
-				// Don't fail, just keep going - some grandfathered projects don't need the user name
+								"(the environment variable containing your Crowdin username).");
+				// Don't fail; some grandfathered projects don't need the username
 			}
 			else
+			{
 				userName = Environment.GetEnvironmentVariable(userNameEnvVar);
+				if (string.IsNullOrEmpty(userName))
+				{
+					Console.WriteLine($"Environment variable {userNameEnvVar} did not contain your Crowdin username.");
+					return null;
+				}
+			}
 
-			if (!String.IsNullOrEmpty(userName))
-				return new AccountCredentials { AccountKey = apiKey, LoginName = userName };
-			else
-				return new ProjectCredentials { ProjectKey = apiKey };
+			if (string.IsNullOrEmpty(userName))
+			{
+				return new ProjectCredentials {ProjectKey = apiKey};
+			}
+			return new AccountCredentials { AccountKey = apiKey, LoginName = userName };
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
