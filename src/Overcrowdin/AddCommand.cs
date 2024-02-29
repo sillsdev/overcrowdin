@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommandLine;
-using Crowdin.Api.Typed;
+using Crowdin.Api.SourceFiles;
 using Microsoft.Extensions.Configuration;
 
 namespace Overcrowdin
@@ -22,11 +23,10 @@ namespace Overcrowdin
 			public IEnumerable<string> Files { get; set; }
 		}
 
-		public static async Task<int> AddFilesToCrowdin(IConfiguration config, Options opts, IFileSystem fs)
+		public static int AddFilesToCrowdin(IConfiguration config, Options opts, IFileSystem fs)
 		{
-			var crowdin = CrowdinCommand.GetClient();
 			var projectId = config["project_identifier"];
-			var credentials = CommandUtilities.GetCredentialsFromConfiguration(config);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch);
 			if (credentials == null)
 			{
 				return 1;
@@ -42,30 +42,26 @@ namespace Overcrowdin
 				return 0;
 			}
 
-			// create folders
-			if (0 != await CreateFolderCommand.CreateFoldersInCrowdin(config, opts, foldersToCreate))
-			{
-				return 1;
-			}
-
+			var uploadHelper = CrowdInUploadHelper.Create(credentials, fs);
 			// Add files to Crowdin
 			Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.Files.Count)} files...");
-			HttpResponseMessage result;
 			var i = 0;
 			do
 			{
 				var addFileParams = addFileParamsList[i];
-				result = await crowdin.AddFile(projectId, credentials, addFileParams);
-			} while (++i < addFileParamsList.Count && result.IsSuccessStatusCode);
+				foreach (var file in addFileParams.Files)
+				{
+					uploadHelper.UploadFile(fs.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name);
+				}
+			} while (++i < addFileParamsList.Count && uploadHelper.FileErrorCount == 0);
 
 			// Give results
-			if (result.IsSuccessStatusCode)
+			if (uploadHelper.FileErrorCount == 0)
 			{
 				Console.WriteLine("Finished Adding files.");
 				if (opts.Verbose)
 				{
-					var info = await result.Content.ReadAsStringAsync();
-					Console.WriteLine(info);
+					Console.WriteLine($"Uploaded {uploadHelper.FileUploadCount} files.");
 				}
 			}
 			else
@@ -80,11 +76,10 @@ namespace Overcrowdin
 
 				if (opts.Verbose)
 				{
-					var error = await result.Content.ReadAsStringAsync();
-					Console.WriteLine(error);
+					Console.WriteLine($"Encountered {uploadHelper.FileErrorCount} errors while uploading files.");
 				}
 			}
-			return result.IsSuccessStatusCode ? 0 : 1;
+			return uploadHelper.FileErrorCount;
 		}
 	}
 }

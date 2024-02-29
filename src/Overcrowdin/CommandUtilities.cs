@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using Crowdin.Api;
-using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Overcrowdin.ContentFiltering;
@@ -13,7 +11,7 @@ namespace Overcrowdin
 {
 	public static class CommandUtilities
 	{
-		public static Credentials GetCredentialsFromConfiguration(IConfiguration config)
+		public static CrowdinProjectSettings GetProjectSettingsFromConfiguration(IConfiguration config, string optionsBranch)
 		{
 			var apiKeyEnvVar = config["api_key_env"];
 			if (string.IsNullOrEmpty(apiKeyEnvVar))
@@ -30,29 +28,9 @@ namespace Overcrowdin
 				return null;
 			}
 
-			var userNameEnvVar = config["user_identifier_env"];
-			var userName = "";
-			if (string.IsNullOrEmpty(userNameEnvVar))
-			{
-				Console.WriteLine("The Crowdin configuration file is missing or did not contain 'user_identifier_env' " +
-								"(the environment variable containing your Crowdin username).");
-				// Don't fail; some grandfathered projects don't need the username
-			}
-			else
-			{
-				userName = Environment.GetEnvironmentVariable(userNameEnvVar);
-				if (string.IsNullOrEmpty(userName))
-				{
-					Console.WriteLine($"Environment variable {userNameEnvVar} did not contain your Crowdin username.");
-					return null;
-				}
-			}
+			var branch = string.IsNullOrEmpty(optionsBranch) ? config["branch"] : optionsBranch;
 
-			if (string.IsNullOrEmpty(userName))
-			{
-				return new ProjectCredentials {ProjectKey = apiKey};
-			}
-			return new AccountCredentials { AccountKey = apiKey, LoginName = userName };
+			return new CrowdinProjectSettings(config["project_identifier"], branch, apiKey);
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
@@ -63,7 +41,6 @@ namespace Overcrowdin
 			{
 				var fileParams = new T
 				{
-					Branch = GetBranch(config, opts),
 					Files = new Dictionary<string, FileInfo>()
 				};
 				foreach (var file in opts.Files)
@@ -100,7 +77,7 @@ namespace Overcrowdin
 			basePath = basePath.Equals(".")
 				? fs.Directory.GetCurrentDirectory()
 				: Path.Combine(fs.Directory.GetCurrentDirectory(), basePath); // Combine will determine whether to treat basePath as absolute
-			var basePathInfo = fs.DirectoryInfo.FromDirectoryName(basePath);
+			var basePathInfo = fs.DirectoryInfo.New(basePath);
 			basePath = basePathInfo.FullName; // normalize the path
 
 			var basePathInfoWrapper = new DirectoryInfoWrapper(basePathInfo);
@@ -114,7 +91,7 @@ namespace Overcrowdin
 				// A leading directory separator char (permissible in source) causes Path.Combine to interpret the path as rooted,
 				// but the source path is always relative (to base_path), so trim leading directory separators.
 				source = source.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-				if (!fs.DirectoryInfo.FromDirectoryName(Path.Combine(basePath, source)).FullName.StartsWith(basePath))
+				if (!fs.DirectoryInfo.New(Path.Combine(basePath, source)).FullName.StartsWith(basePath))
 				{
 					throw new NotSupportedException($"All files must be within the base path. The following may not be: {source}");
 				}
@@ -122,7 +99,6 @@ namespace Overcrowdin
 				var fileParams = new T
 				{
 					// REVIEW (Hasso) 2020.09: should we allow a branch from Opts when getting files from the config file?
-					Branch = GetBranch(config, opts),
 					Files = new Dictionary<string, FileInfo>(),
 					ExportPatterns = new Dictionary<string, string>()
 				};
@@ -184,10 +160,10 @@ namespace Overcrowdin
 			}
 		}
 
-		public static bool? GetIntAsBool(IConfiguration config, string key)
+		public static bool GetIntAsBool(IConfiguration config, string key)
 		{
 			var val = config.GetValue<int?>(key);
-			return val == null ? (bool?) null : val != 0;
+			return val != null && val != 0;
 		}
 
 		// ENHANCE (Hasso) 2020.01: optimize for mostly-full directory structures?
@@ -209,58 +185,32 @@ namespace Overcrowdin
 			// On Windows, each Path call normalizes to '\', but we are normalizing to '/' for cross-platform compatibility.
 			return Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
 		}
-
-		public const int BatchSize = 20;
-
 		public static T[] BatchFiles<T>(T allFiles) where T : FileParameters, new()
 		{
-			if (allFiles.Files.Count <= BatchSize)
-			{
-				return new[] {allFiles};
-			}
-
-			var keys = allFiles.Files.Keys.ToArray();
-			var batchCount = (keys.Length - 1) / BatchSize + 1; // if there is any remainder, round up
-			var batchedFiles = new T[batchCount];
-			for (var i = 0; i < batchCount; i++)
-			{
-				batchedFiles[i] = allFiles.ShallowClone();
-				batchedFiles[i].Files = new Dictionary<string, FileInfo>();
-				batchedFiles[i].ExportPatterns = new Dictionary<string, string>();
-				batchedFiles[i].Titles = new Dictionary<string, string>();
-				if (batchedFiles[i] is UpdateFileParameters updateBatch)
-				{
-					updateBatch.NewNames = new Dictionary<string, string>();
-				}
-			}
-			for (var i = 0; i < keys.Length; i++)
-			{
-				var key = keys[i];
-				var currentBatch = batchedFiles[i / BatchSize];
-				currentBatch.Files[key] = allFiles.Files[key];
-				if (allFiles.ExportPatterns != null && allFiles.ExportPatterns.TryGetValue(key, out var exportPattern))
-				{
-					currentBatch.ExportPatterns[key] = exportPattern;
-				}
-				if (allFiles.Titles != null && allFiles.Titles.TryGetValue(key, out var title))
-				{
-					currentBatch.Titles[key] = title;
-				}
-
-				var allNewNames = (allFiles as UpdateFileParameters)?.NewNames;
-				if (allNewNames != null && allNewNames.TryGetValue(key, out var newName))
-				{
-					// ReSharper disable once PossibleNullReferenceException - if allFiles is UpdateFileParameters, currentBatch is, too.
-					(currentBatch as UpdateFileParameters).NewNames[key] = newName;
-				}
-			}
-
-			return batchedFiles;
+			return new[] {allFiles};
 		}
 
 		public static string GetBranch(IConfiguration config, IBranchOptions opts)
 		{
 			return opts?.Branch ?? config["branch"];
 		}
+	}
+
+	public class FileParameters
+	{
+		public Dictionary<string, FileInfo> Files;
+		public Dictionary<string, string> ExportPatterns;
+	}
+
+	public class AddFileParameters : FileParameters
+	{
+		public bool TranslateContent;
+		public bool TranslateAttributes;
+		public List<string> TranslatableElements;
+	}
+
+	public interface ICrowdinCredentials
+	{
+		string AccessToken { get; }
 	}
 }

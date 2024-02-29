@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO.Abstractions;
 using System.Threading;
 using CommandLine;
@@ -17,7 +17,7 @@ namespace Overcrowdin
 		private static int Main(string[] args)
 		{
 			// Set the static Crowdin client factory for the main application
-			CrowdinCommand.ClientFactory = new CrowdinV1ApiFactory();
+			CrowdinCommand.ClientFactory = new CrowdinApiFactory();
 			IFileSystem fileSystem = new FileSystem();
 
 			// Build the configuration from various sources
@@ -28,34 +28,23 @@ namespace Overcrowdin
 				.AddCommandLine(args)
 				.Build();
 			int result = 1;
-			var parseResult = Parser.Default.ParseArguments<GenerateCommand.Options, UpdateCommand.Options,
-					AddCommand.Options, DownloadCommand.Options, ExportCommand.Options>(args)
-				.WithParsed<GenerateCommand.Options>(async opts =>
+			var parseResult = Parser.Default.ParseArguments<UpdateCommand.Options,
+					AddCommand.Options, DownloadCommand.Options>(args)
+				.WithParsed<UpdateCommand.Options>(opts =>
 				{
-					result = await GenerateCommand.GenerateConfigFromCrowdin(config, opts, fileSystem);
+					result = UpdateCommand.UpdateFilesInCrowdin(config, opts, fileSystem);
 					Gate.Set();
 				})
-				.WithParsed<UpdateCommand.Options>(async opts =>
+				.WithParsed<AddCommand.Options>(opts =>
 				{
-					result = await UpdateCommand.UpdateFilesInCrowdin(config, opts, fileSystem);
+					result = AddCommand.AddFilesToCrowdin(config, opts, fileSystem);
 					Gate.Set();
 				})
-				.WithParsed<AddCommand.Options>(async opts =>
+				.WithParsed<DownloadCommand.Options>(opts =>
 				{
-					result = await AddCommand.AddFilesToCrowdin(config, opts, fileSystem);
+					result = DownloadCommand.DownloadFromCrowdin(config, opts, fileSystem);
 					Gate.Set();
-				})
-				.WithParsed<DownloadCommand.Options>(async opts =>
-				{
-					result = await DownloadCommand.DownloadFromCrowdin(config, opts, fileSystem);
-					Gate.Set();
-				})
-				.WithParsed<ExportCommand.Options>(async opts =>
-				{
-					result = await ExportCommand.ExportCrowdinTranslations(config, opts);
-					Gate.Set();
-				})
-				.WithNotParsed(errs =>
+				}).WithNotParsed(errs =>
 				{
 					Gate.Set();
 				});

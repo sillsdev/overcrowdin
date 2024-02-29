@@ -4,8 +4,6 @@ using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
-using Crowdin.Api;
-using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Overcrowdin;
@@ -18,7 +16,7 @@ namespace OvercrowdinTests
 		[Fact]
 		public void IncompleteConfigReturnsNull()
 		{
-			var result = CommandUtilities.GetCredentialsFromConfiguration(_mockConfig.Object);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null);
 			Assert.Null(result);
 		}
 
@@ -27,23 +25,10 @@ namespace OvercrowdinTests
 		{
 			const string apiKeyEnvVar = "NOKEYEXISTS";
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			var result = CommandUtilities.GetCredentialsFromConfiguration(_mockConfig.Object);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null);
 			Assert.Null(result);
 		}
-
-		[Fact]
-		public void ProjectApiKeyReturnsProjectCredentials()
-		{
-			const string apiKeyEnvVar = "KEYEXISTS";
-			const string apiKey = "fakecrowdinapikey";
-			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			Environment.SetEnvironmentVariable(apiKeyEnvVar, apiKey);
-			var result = CommandUtilities.GetCredentialsFromConfiguration(_mockConfig.Object);
-			var projCreds = result as ProjectCredentials;
-			Assert.NotNull(projCreds);
-			Assert.Equal(apiKey, projCreds.ProjectKey);
-		}
-
+		
 		private static MockFileSystem SetUpDirectoryStructure()
 		{
 			var fileSys = new MockFileSystem();
@@ -213,7 +198,7 @@ namespace OvercrowdinTests
 			file.source = "/john/quincy/**/*.txt";
 			file.translation = johnPattern;
 			files.Add(file);
-			var fileParamsList = new List<UpdateFileParameters>();
+			var fileParamsList = new List<FileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
@@ -243,7 +228,7 @@ namespace OvercrowdinTests
 			dynamic configJson = SetUpConfig("/**/*.txt");
 			var file = configJson.files[0];
 			file.ignore = new JArray("**/jane/**/*", "**/quincy/**/*.*");
-			var fileParamsList = new List<UpdateFileParameters>();
+			var fileParamsList = new List<FileParameters>();
 			var folders = new SortedSet<string>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
@@ -271,7 +256,7 @@ namespace OvercrowdinTests
 			dynamic configJson = SetUpConfig("/**/*.txt");
 			var file = configJson.files[0];
 			file.ignore = new JArray("**/j*/**/*");
-			var fileParamsList = new List<UpdateFileParameters>();
+			var fileParamsList = new List<FileParameters>();
 			var folders = new SortedSet<string>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
@@ -295,7 +280,7 @@ namespace OvercrowdinTests
 			dynamic configJson = SetUpConfig("/**/*.txt");
 			var file = configJson.files[0];
 			file.ignore = new JArray("**/te*");
-			var fileParamsList = new List<UpdateFileParameters>();
+			var fileParamsList = new List<FileParameters>();
 			var folders = new SortedSet<string>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
@@ -322,7 +307,7 @@ namespace OvercrowdinTests
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				Assert.False(CommandUtilities.GetIntAsBool(config, "zero"));
 				Assert.True(CommandUtilities.GetIntAsBool(config, "one"));
-				Assert.Null(CommandUtilities.GetIntAsBool(config, "not_specified"));
+				Assert.False(CommandUtilities.GetIntAsBool(config, "not_specified"));
 			}
 		}
 
@@ -468,164 +453,6 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public void BatchesFilesInTwenties()
-		{
-			const int fileCount = CommandUtilities.BatchSize + 1;
-			var mockFileSystem = new MockFileSystem();
-			for (var i = 0; i < fileCount; i++)
-			{
-				mockFileSystem.File.WriteAllText($"{i}.txt", "txt");
-			}
-			var configJson = SetUpConfig("*.txt");
-			var fileParamsList = new List<AddFileParameters>();
-
-			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
-			{
-				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
-			}
-
-			Assert.Equal(2, fileParamsList.Count);
-			Assert.Equal(CommandUtilities.BatchSize, fileParamsList[0].Files.Count);
-			Assert.Single(fileParamsList[1].Files);
-
-			// Ensure all files are still there
-			// Getting an aggregate set by adding the file from result[1] to result[0] would be easier, but changing the data seems unprincipled.
-			var allBatchedFiles = fileParamsList[0].Files.Concat(fileParamsList[1].Files).Select(kvp => kvp.Key).ToHashSet();
-			for (var i = 0; i < fileCount; i++)
-			{
-				Assert.Contains($"{i}.txt", allBatchedFiles);
-			}
-		}
-
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public void BatchFilesPreservesData(bool testWithExtraProperties)
-		{
-			const int fileCount = CommandUtilities.BatchSize + 1;
-			const string branchName = "I-get-copied-to-each-batch";
-
-			var files = new Dictionary<string, FileInfo>();
-			var exportPatterns = new Dictionary<string, string>();
-			var titles = new Dictionary<string, string>();
-			var newNames = new Dictionary<string, string>();
-			dynamic fileParams;
-			if (testWithExtraProperties)
-			{
-				fileParams = new UpdateFileParameters
-				{
-					Files = files,
-					ExportPatterns = exportPatterns,
-					Titles = titles,
-					NewNames = newNames,
-					Branch = branchName
-				};
-			}
-			else
-			{
-				fileParams = new AddFileParameters
-				{
-					Files = files,
-					Branch = branchName
-				};
-			}
-
-			for (var i = 0; i < fileCount; i++)
-			{
-				var key = i.ToString();
-				files[key] = new FileInfo($"{i}.txt");
-				if (testWithExtraProperties)
-				{
-					exportPatterns[key] = $"%locale%/{i}.txt";
-					titles[key] = $"File {i}";
-					newNames[key] = $"file-{i}.txt";
-				}
-			}
-
-			FileParameters[] result = CommandUtilities.BatchFiles(fileParams);
-
-			Assert.Equal(2, result.Length);
-			Assert.Equal(CommandUtilities.BatchSize, result[0].Files.Count);
-			Assert.Single(result[1].Files);
-			foreach (var batch in result)
-			{
-				Assert.Equal(branchName, batch.Branch);
-			}
-
-			// Ensure all files are still there
-			// Getting an aggregate set by adding the file from result[1] to result[0] would be easier, but changing the data seems unprincipled.
-			var allBatchedFiles = result[0].Files.Concat(result[1].Files).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-			for (var i = 0; i < fileCount; i++)
-			{
-				var key = i.ToString();
-				Assert.Equal(files[key], allBatchedFiles[key]);
-			}
-
-			if (!testWithExtraProperties)
-			{
-				foreach(var batch in result)
-				{
-					Assert.IsType<AddFileParameters>(batch);
-					Assert.Empty(batch.ExportPatterns);
-					Assert.Empty(batch.Titles);
-				}
-				return;
-			}
-
-			foreach (var batch in result)
-			{
-				Assert.IsType<UpdateFileParameters>(batch);
-			}
-			Assert.Equal(CommandUtilities.BatchSize, result[0].ExportPatterns.Count);
-			Assert.Single(result[1].ExportPatterns);
-			var allBatchedExportPatterns = result[0].ExportPatterns.Concat(result[1].ExportPatterns).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-			for (var i = 0; i < fileCount; i++)
-			{
-				var key = i.ToString();
-				Assert.Equal(exportPatterns[key], allBatchedExportPatterns[key]);
-			}
-
-			Assert.Equal(CommandUtilities.BatchSize, result[0].Titles.Count);
-			Assert.Single(result[1].Titles);
-			var allBatchedTitles = result[0].Titles.Concat(result[1].Titles).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-			for (var i = 0; i < fileCount; i++)
-			{
-				var key = i.ToString();
-				Assert.Equal(titles[key], allBatchedTitles[key]);
-			}
-
-			var newNames0 = ((UpdateFileParameters)result[0]).NewNames;
-			var newNames1 = ((UpdateFileParameters)result[1]).NewNames;
-			Assert.Equal(CommandUtilities.BatchSize, newNames0.Count);
-			Assert.Single(newNames1);
-			var allBatchedNewNames = newNames0.Concat(newNames1).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-			for (var i = 0; i < fileCount; i++)
-			{
-				var key = i.ToString();
-				Assert.Equal(newNames[key], allBatchedNewNames[key]);
-			}
-		}
-
-		[Fact]
-		public void NoEmptyBatches()
-		{
-			var mockFileSystem = new MockFileSystem();
-			var configJson = SetUpConfig("file-not-found.txt");
-			var fileParamsList = new List<UpdateFileParameters>();
-			var foldersToCreate = new SortedSet<string>();
-
-			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
-			{
-				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				CommandUtilities.GetFileList(config, new AddCommand.Options(), mockFileSystem, fileParamsList, foldersToCreate);
-			}
-
-			Assert.Empty(fileParamsList);
-			Assert.Empty(foldersToCreate);
-		}
-
-		[Fact]
 		public void BatchEmptyFilesListDoesntCrash()
 		{
 			var fileParams = new AddFileParameters { Files = new Dictionary<string, FileInfo>() };
@@ -689,7 +516,7 @@ namespace OvercrowdinTests
 						fileParamsList.AddRange(addFileParamsList);
 						break;
 					case "Update":
-						var updateFileParamsList = new List<UpdateFileParameters>();
+						var updateFileParamsList = new List<FileParameters>();
 						CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, updateFileParamsList, new SortedSet<string>());
 						fileParamsList.AddRange(updateFileParamsList);
 						break;

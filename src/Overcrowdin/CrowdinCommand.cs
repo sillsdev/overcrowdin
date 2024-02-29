@@ -1,4 +1,5 @@
-﻿using System.Threading;
+using System.Threading;
+using Crowdin.Api;
 
 namespace Overcrowdin
 {
@@ -11,9 +12,9 @@ namespace Overcrowdin
 			set => _safeClientFactory.Value = value;
 		}
 
-		public static ICrowdinClient GetClient()
+		public static ICrowdinApiClient GetClient(string apiKey)
 		{
-			return ClientFactory.Create();
+			return ClientFactory.Create(apiKey);
 		}
 	}
 }

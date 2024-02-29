@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using CommandLine;
-using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 
 namespace Overcrowdin
@@ -23,18 +23,15 @@ namespace Overcrowdin
 			// TODO: Add option for update approval -- default to Update_as_unapproved
 		}
 
-		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, IFileSystem fileSystem)
+		public static int UpdateFilesInCrowdin(IConfiguration config, Options opts, IFileSystem fileSystem)
 		{
-			var crowdin = CrowdinCommand.GetClient();
-
-			var projectId = config["project_identifier"];
-			var credentials = CommandUtilities.GetCredentialsFromConfiguration(config);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch);
 			if (credentials == null)
 			{
 				return 1;
 			}
-
-			var updateFileParametersList = new List<UpdateFileParameters>();
+			var uploadHelper = CrowdInUploadHelper.Create(credentials, fileSystem);
+			var updateFileParametersList = new List<FileParameters>();
 			CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>());
 
 			if (!updateFileParametersList.Any())
@@ -45,22 +42,23 @@ namespace Overcrowdin
 
 
 			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.Files.Count)} files...");
-			HttpResponseMessage crowdinResult;
 			var i = 0;
 			do
 			{
 				var updateFileParameters = updateFileParametersList[i];
-				crowdinResult = await crowdin.UpdateFile(projectId, credentials, updateFileParameters);
-			} while (++i < updateFileParametersList.Count && crowdinResult.IsSuccessStatusCode);
+				foreach (var file in updateFileParameters.Files)
+				{
+					uploadHelper.UploadFile(fileSystem.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name);
+				}
+			} while (++i < updateFileParametersList.Count && uploadHelper.FileErrorCount == 0);
 
 			// Give results
-			if (crowdinResult.IsSuccessStatusCode)
+			if (uploadHelper.FileErrorCount == 0)
 			{
 				Console.WriteLine("Finished Updating files.");
 				if (opts.Verbose)
 				{
-					var info = await crowdinResult.Content.ReadAsStringAsync();
-					Console.WriteLine(info);
+					Console.WriteLine($"Updated {uploadHelper.FileUploadCount} files.");
 				}
 			}
 			else
@@ -76,15 +74,9 @@ namespace Overcrowdin
 				{
 					Console.WriteLine("Some files may have been updated.");
 				}
-
-				if (opts.Verbose)
-				{
-					var error = await crowdinResult.Content.ReadAsStringAsync();
-					Console.WriteLine(error);
-				}
 			}
 
-			return crowdinResult.IsSuccessStatusCode ? 0 : 1;
+			return uploadHelper.FileErrorCount;
 		}
 	}
 }
