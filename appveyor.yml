@@ -1,17 +1,11 @@
 version: '{build}'
-image: Visual Studio 2017
+image: Visual Studio 2022
 nuget:
   disable_publish_octopus: true
-before_build:
-- cmd: >-
-    git submodule update --init
-
-    nuget restore
-build:
-  project: Overcrowdin.sln
-  verbosity: minimal
-after_build:
-- cmd: dotnet pack --no-build src/Overcrowdin/Overcrowdin.csproj
+build_script:
+ - dotnet test
+ - dotnet build --configuration Release
+ - dotnet pack --no-build src/Overcrowdin/Overcrowdin.csproj
 artifacts:
 - path: '**/*nupkg'
   name: nuget

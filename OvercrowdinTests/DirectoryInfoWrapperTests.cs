@@ -17,7 +17,7 @@ namespace OvercrowdinTests
 		[InlineData(@"C:\testDir\", @"C:\testDir")]
 		public static void FullName(string input, string normalized)
 		{
-			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.FromDirectoryName(input));
+			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.New(input));
 			Assert.Equal(normalized, sut.FullName);
 		}
 
@@ -26,7 +26,7 @@ namespace OvercrowdinTests
 		[InlineData(@"C:\superDir\subDir", "subDir")]
 		public static void Name(string fullName, string name)
 		{
-			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.FromDirectoryName(fullName));
+			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.New(fullName));
 			Assert.Equal(name, sut.Name);
 		}
 
@@ -35,7 +35,7 @@ namespace OvercrowdinTests
 		[InlineData(@"C:\superDir\subDir", @"C:\superDir")]
 		public static void ParentDirectory(string path, string parent)
 		{
-			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.FromDirectoryName(path));
+			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.New(path));
 			Assert.Equal(parent, sut.ParentDirectory?.FullName);
 		}
 
@@ -44,7 +44,7 @@ namespace OvercrowdinTests
 		{
 			const string superDir = @"C:\superDir";
 			const string subDir = "subDir";
-			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.FromDirectoryName(superDir));
+			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.New(superDir));
 			var result = sut.GetDirectory(subDir);
 			Assert.Equal(Path.Combine(superDir, subDir), result.FullName);
 			// The subdirectory is not required to exist. It does not in this test, and it should not be created.
@@ -56,7 +56,7 @@ namespace OvercrowdinTests
 		{
 			const string directory = @"C:\dir";
 			const string file = "file.txt";
-			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.FromDirectoryName(directory));
+			var sut = new DirectoryInfoWrapper(FileSystem.DirectoryInfo.New(directory));
 			var result = sut.GetFile(file);
 			Assert.Equal(Path.Combine(directory, file), result.FullName);
 		}
@@ -64,7 +64,7 @@ namespace OvercrowdinTests
 		[Fact]
 		public static void EnumerateFileSystemInfos()
 		{
-			var fileSys = new MockFileSystem();
+			var fileSys = new MockFileSystem(new MockFileSystemOptions { CreateDefaultTempDir = false });
 			fileSys.Directory.CreateDirectory("jane/doe");
 			fileSys.Directory.CreateDirectory("john/doe");
 			fileSys.Directory.CreateDirectory("john/quincy/adams");
@@ -79,7 +79,7 @@ namespace OvercrowdinTests
 			fileSys.File.WriteAllText("john/quincy/adams/allonym.txt", "contents");
 			fileSys.File.WriteAllText("john/quincy/doe/test.txt", "contents");
 
-			var sut = new DirectoryInfoWrapper(fileSys.DirectoryInfo.FromDirectoryName("/"));
+			var sut = new DirectoryInfoWrapper(fileSys.DirectoryInfo.New("/"));
 			var results = sut.EnumerateFileSystemInfos().ToArray();
 
 			Assert.Equal(3, results.Length);

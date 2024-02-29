@@ -26,7 +26,7 @@ namespace Overcrowdin.ContentFiltering
 				return true;
 			}
 
-			var translatableElements = (IEnumerable<string>) args[0];
+			var translatableElements = (IEnumerable<string>)args[0];
 			// ReSharper disable PossibleMultipleEnumeration - most times, there will be only one element. Also, we
 			// expect all implementations to be list or array
 			return !translatableElements.Any() || translatableElements.Any(te => doc.XPathSelectElements(te).Any());

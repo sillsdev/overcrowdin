@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using IDirectoryInfo = System.IO.Abstractions.IDirectoryInfo;
@@ -10,7 +10,7 @@ namespace Overcrowdin
 	{
 		private readonly IDirectoryInfo _directoryInfo;
 
-		public override string Name => _directoryInfo.Name;
+		public override string Name => _directoryInfo.Name == _directoryInfo.Root.Name ? "" : _directoryInfo.Name;
 		public override string FullName => _directoryInfo.FullName;
 
 		public DirectoryInfoWrapper(IDirectoryInfo directoryInfo)
@@ -45,7 +45,7 @@ namespace Overcrowdin
 
 		public override DirectoryInfoBase GetDirectory(string path)
 		{
-			var info = _directoryInfo.FileSystem.DirectoryInfo.FromDirectoryName(Path.Combine(FullName, path));
+			var info = _directoryInfo.FileSystem.DirectoryInfo.New(Path.Combine(FullName, path));
 			return new DirectoryInfoWrapper(info);
 		}
 

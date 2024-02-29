@@ -1,7 +1,9 @@
-﻿namespace Overcrowdin
+using Crowdin.Api;
+
+namespace Overcrowdin
 {
 	public interface ICrowdinClientFactory
 	{
-		ICrowdinClient Create();
+		ICrowdinApiClient Create(string apiKey);
 	}
 }
