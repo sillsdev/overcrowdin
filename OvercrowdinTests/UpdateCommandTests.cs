@@ -70,7 +70,7 @@ namespace OvercrowdinTests
 
 
 		[Fact]
-		public void MissingApiKeyReturnsFailure()
+		public async void MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -86,7 +86,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public void UpdateCommandWithCommandLine(bool makeBranch)
+		public async void UpdateCommandWithCommandLine(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -107,7 +107,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public void UpdateCommandWithConfigFile(bool makeBranch)
+		public async void UpdateCommandWithConfigFile(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -142,7 +142,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public void UpdateCommandWithConfigFileMatchingNoFiles()
+		public async void UpdateCommandWithConfigFileMatchingNoFiles()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "no-existe.txt";
