@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Overcrowdin;
 using RichardSzalay.MockHttp;
 using Xunit;
@@ -9,7 +10,7 @@ namespace OvercrowdinTests
 	{
 
 		[Fact]
-		public async void NoMatchingProjectsThrows()
+		public async Task NoMatchingProjectsThrows()
 		{
 			_mockHttpClient.When("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
 				"application/json", $"{{'data':[{{'data': {{'id': 369681,'name': 'nottest'}}}}]}}");
@@ -19,7 +20,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void SetsProjectId()
+		public async Task SetsProjectId()
 		{
 			const int testId = 44444;
 			const int branchId = 55555;

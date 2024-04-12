@@ -185,7 +185,7 @@ namespace Overcrowdin
 			var httpClient = _httpClientFactory.GetClient();
 			using (var zipFileStream = _fileSystem.FileStream.New(outputPath, FileMode.Create)) // Can't use a "using" statement since it gets disposed before the enumeration is read
 			using (var stream = await httpClient.GetStreamAsync(url))
-				stream.CopyTo(zipFileStream);
+				await stream.CopyToAsync(zipFileStream);
 
 			Console.WriteLine("Translation zip downloaded");
 			return true;
@@ -299,9 +299,12 @@ namespace Overcrowdin
 		private async Task<ProjectBuild> WaitForBuildToComplete(ProjectBuild build)
 		{
 			int prevProgressDiv10 = 0;
+			var waitPeriod = 2000;
+			var maxWaitTime = 60 * 60 * 1000; // 1 hour
+			var taskTime = 0;
 			do
 			{
-				Thread.Sleep(2000);
+				await Task.Delay(waitPeriod);
 
 				build = await _client.Translations.CheckProjectBuildStatus(_project.Id, build.Id);
 
@@ -311,8 +314,11 @@ namespace Overcrowdin
 					Console.WriteLine($"    {build.Progress}% complete");
 					prevProgressDiv10 = progressDiv10;
 				}
-			}
-			while (build.Status == BuildStatus.InProgress);
+
+				maxWaitTime += waitPeriod;
+			} while (build.Status == BuildStatus.InProgress && taskTime < maxWaitTime);
+			if(taskTime >= maxWaitTime)
+				build.Status = BuildStatus.Failed;
 
 			return build;
 		}

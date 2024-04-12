@@ -70,7 +70,7 @@ namespace OvercrowdinTests
 
 
 		[Fact]
-		public async void MissingApiKeyReturnsFailure()
+		public async Task MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -86,7 +86,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void UpdateCommandWithCommandLine(bool makeBranch)
+		public async Task UpdateCommandWithCommandLine(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -107,7 +107,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void UpdateCommandWithConfigFile(bool makeBranch)
+		public async Task UpdateCommandWithConfigFile(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -142,7 +142,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void UpdateCommandWithConfigFileMatchingNoFiles()
+		public async Task UpdateCommandWithConfigFileMatchingNoFiles()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "no-existe.txt";
@@ -163,7 +163,6 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				MockPrepareToAddFile(TestProjectId, projectName);
 				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem, MockApiFactory);
 				Assert.Equal(0, result);
 				_mockHttpClient.VerifyNoOutstandingExpectation();

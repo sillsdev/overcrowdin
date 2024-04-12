@@ -5,6 +5,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Overcrowdin;
@@ -67,7 +68,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void AddCommandWithCommandLine()
+		public async Task AddCommandWithCommandLine()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -86,7 +87,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void AddCommandWithConfigFile()
+		public async Task AddCommandWithConfigFile()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -118,7 +119,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void AddCommandWithConfigFileMatchingNoFiles()
+		public async Task AddCommandWithConfigFileMatchingNoFiles()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "no-existe.txt";
@@ -150,7 +151,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void AddCommandCreatesFolders(bool makeBranch)
+		public async Task AddCommandCreatesFolders(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "relative/path/test.txt";
@@ -177,7 +178,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void AddCommandWithCommandLineToBranch(bool makeBranch)
+		public async Task AddCommandWithCommandLineToBranch(bool makeBranch)
 		{
 			const string inputFileName = "test.txt";
 			var mockFileSystem = new MockFileSystem();
@@ -198,7 +199,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void AddCommandWithConfigFileToBranch(bool makeBranch)
+		public async Task AddCommandWithConfigFileToBranch(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";

@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Overcrowdin;
@@ -14,14 +15,14 @@ namespace OvercrowdinTests
 	public class CommandUtilitiesTests : CrowdinApiTestBase
 	{
 		[Fact]
-		public async void IncompleteConfigReturnsNull()
+		public async Task IncompleteConfigReturnsNull()
 		{
 			var result = await CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory);
 			Assert.Null(result);
 		}
 
 		[Fact]
-		public async void MissingApiKeyReturnsNull()
+		public async Task MissingApiKeyReturnsNull()
 		{
 			const string apiKeyEnvVar = "NOKEYEXISTS";
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);

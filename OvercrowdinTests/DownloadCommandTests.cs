@@ -1,6 +1,7 @@
 using System;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Overcrowdin;
 using RichardSzalay.MockHttp;
 using Xunit;
@@ -30,7 +31,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void MissingApiKeyReturnsFailure()
+		public async Task MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string apiKeyEnvVar = "NOKEYEXISTS";
@@ -45,7 +46,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void ExportFirstTrueCallsExportAndDownload(bool useBranch)
+		public async Task ExportFirstTrueCallsExportAndDownload(bool useBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string outputFileName = "test.zip";
@@ -77,7 +78,7 @@ namespace OvercrowdinTests
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void ExportWithRecentBuildSkipsExportAndCallsDownload(bool useBranch)
+		public async Task ExportWithRecentBuildSkipsExportAndCallsDownload(bool useBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string outputFileName = "test.zip";
@@ -106,7 +107,7 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public async void ErrorsAreReported()
+		public async Task ErrorsAreReported()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string outputFileName = "test.zip";

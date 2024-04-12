@@ -25,12 +25,6 @@ namespace Overcrowdin
 
 		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, IFileSystem fileSystem, ICrowdinClientFactory apiFactory)
 		{
-			var credentials = await CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
-			if (credentials == null)
-			{
-				return 1;
-			}
-			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fileSystem, apiFactory);
 			var updateFileParametersList = new List<FileParameters>();
 			CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>());
 
@@ -39,7 +33,12 @@ namespace Overcrowdin
 				Console.WriteLine("No files to add.");
 				return 0;
 			}
-
+			var credentials = await CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
+			if (credentials == null)
+			{
+				return 1;
+			}
+			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fileSystem, apiFactory);
 
 			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.Files.Count)} files...");
 			var i = 0;

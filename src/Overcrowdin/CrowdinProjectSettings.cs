@@ -37,9 +37,9 @@ namespace Overcrowdin
 					settings.BranchId = branch?.Id ?? 0;
 				}
 			}
-			catch
+			catch(Exception e)
 			{
-				throw new Exception($"Could not find project with name {project} and branch {branchName}");
+				throw new Exception($"Could not find project with name {project} and branch {branchName}", e);
 			}
 
 			return settings;
