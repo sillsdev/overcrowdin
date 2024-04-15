@@ -5,21 +5,72 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Crowdin.Api;
-using Crowdin.Api.Typed;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Overcrowdin;
+using RichardSzalay.MockHttp;
 using Xunit;
 
 namespace OvercrowdinTests
 {
 	public class UpdateCommandTests : CrowdinApiTestBase
 	{
+		private const int TestProjectId = 44444;
+
+		private void MockPrepareToAddFile(int projectId, string projectName)
+		{
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
+			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/files?limit=500&offset=0&recursion=1").Respond(
+				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
+			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
+				"application/json", $"{{'data':[]}}");
+		}
+		private void MockAddFile(int projectId, string inputFileName, MockFileSystem mockFileSystem)
+		{
+			mockFileSystem.AddFile(inputFileName, new MockFileData("irrelevant"));
+			_mockHttpClient.Expect(HttpMethod.Post, "https://api.crowdin.com/api/v2/storages")
+				.WithHeaders("Crowdin-API-FileName", $"{Path.GetFileName(inputFileName)}").Respond("application/json", "{}");
+			_mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/files").Respond("application/json", "{}");
+			_mockHttpClient.Expect(HttpMethod.Delete, "https://api.crowdin.com/api/v2/storages/0").Respond(HttpStatusCode.NoContent, "application/json", "{}");
+		}
+
+		private void MockPrepareToAddFilesWithBranch(bool makeBranch, int projectId, string projectName, string branch)
+		{
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
+			if (makeBranch)
+			{
+				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=25&offset=0").Respond(
+					"application/json", $"{{'data':[]}}");
+			}
+
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
+			if (makeBranch)
+			{
+				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=500&offset=0").Respond(
+					"application/json", $"{{'data':[]}}");
+				_mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/branches")
+					.WithPartialContent($"\"name\":\"{branch}\"").Respond("application/json", "{}");
+			}
+
+			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/files?limit=500&offset=0&recursion=1").Respond(
+				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
+			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
+				"application/json", $"{{'data':[]}}");
+		}
+
+
 		[Fact]
-		// REVIEW (Hasso) 2020.01: should we be checking the same for AddFiles and other methods? Should this check be centralized?
-		public async void MissingApiKeyReturnsFailure()
+		public async Task MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
@@ -28,49 +79,46 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
 			// No need to set up calls. If the API key is missing, the API call should not be attempted.
-			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } }, mockFileSystem.FileSystem);
-			_mockClient.Verify();
+			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object, new UpdateCommand.Options { Files = new[] { inputFileName } }, mockFileSystem.FileSystem, MockApiFactory);
 			Assert.Equal(1, result);
 		}
 
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void UpdateCommandWithCommandLine(bool makeBranch)
+		public async Task UpdateCommandWithCommandLine(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
-			const string projectId = "testcrowdinproject";
+			const string projectName = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
 			var branch = makeBranch ? "branchName" : null;
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
-			// Set up only the expected call to UpdateFile (any calls without the expected file params will return null)
-			_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(), It.Is<UpdateFileParameters>(fp => fp.Files.ContainsKey(inputFileName))))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
-				.Verifiable();
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
+			MockPrepareToAddFilesWithBranch(makeBranch, TestProjectId, projectName, branch);
+			MockAddFile(TestProjectId, inputFileName, mockFileSystem);
 			var result = await UpdateCommand.UpdateFilesInCrowdin(_mockConfig.Object,
-				new UpdateCommand.Options {Branch = branch, Files = new[] {inputFileName}}, mockFileSystem);
-			_mockClient.Verify();
+				new UpdateCommand.Options { Branch = branch, Files = new[] { inputFileName } }, mockFileSystem, MockApiFactory);
 			Assert.Equal(0, result);
+			_mockHttpClient.VerifyNoOutstandingExpectation();
 		}
 
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void UpdateCommandWithConfigFile(bool makeBranch)
+		public async Task UpdateCommandWithConfigFile(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "test.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
-			const string projectId = "testcrowdinproject";
+			const string projectName = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
-			var branch = makeBranch ? "branchName" : string.Empty;
+			var branch = makeBranch ? "branchName" : null;
 			mockFileSystem.File.WriteAllText(inputFileName, "mock contents");
 			dynamic configJson = new JObject();
 
-			configJson.project_id = projectId;
+			configJson.project_identifier = projectName;
 			configJson.api_key_env = apiKeyEnvVar;
 			configJson.branch = branch;
 			configJson.base_path = ".";
@@ -85,27 +133,25 @@ namespace OvercrowdinTests
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
 				// Set up only the expected call to UpdateFile (any calls without the expected file params will return null)
-				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
-						It.Is<UpdateFileParameters>(fp => fp.Branch == branch && fp.Files.ContainsKey(inputFileName))))
-					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
-					.Verifiable();
-				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);
-				_mockClient.Verify();
+				MockPrepareToAddFilesWithBranch(makeBranch, TestProjectId, projectName, branch);
+				MockAddFile(TestProjectId, inputFileName, mockFileSystem);
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem, MockApiFactory);
 				Assert.Equal(0, result);
+				_mockHttpClient.VerifyNoOutstandingExpectation();
 			}
 		}
 
 		[Fact]
-		public async void UpdateCommandWithConfigFileMatchingNoFiles()
+		public async Task UpdateCommandWithConfigFileMatchingNoFiles()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "no-existe.txt";
 			const string apiKeyEnvVar = "KEYEXISTS";
-			const string projectId = "testcrowdinproject";
+			const string projectName = "testcrowdinproject";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
 
 			dynamic configJson = new JObject();
-			configJson.project_id = projectId;
+			configJson.project_identifier = projectName;
 			configJson.api_key_env = apiKeyEnvVar;
 			configJson.base_path = ".";
 			dynamic file = new JObject();
@@ -117,52 +163,9 @@ namespace OvercrowdinTests
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);
-				_mockClient.Verify();
+				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem, MockApiFactory);
 				Assert.Equal(0, result);
-			}
-		}
-
-		[Fact]
-		public async void UpdateCommandBatchesManyFiles()
-		{
-			const int secondBatchSize = 2;
-			const int fileCount = CommandUtilities.BatchSize + secondBatchSize;
-			const string apiKeyEnvVar = "KEYEXISTS";
-			const string projectId = "testcrowdinproject";
-			var mockFileSystem = new MockFileSystem();
-			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
-			for (var i = 0; i < fileCount; i++)
-			{
-				mockFileSystem.File.WriteAllText($"file{i}.txt", "mock contents");
-			}
-
-			dynamic configJson = new JObject();
-			configJson.project_id = projectId;
-			configJson.api_key_env = apiKeyEnvVar;
-			configJson.base_path = ".";
-			dynamic file = new JObject();
-			file.source = "*.txt";
-			file.translation = "/l10n/%two_letters_code%/%original_file_name%";
-			var files = new JArray { file };
-			configJson.files = files;
-
-			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
-			{
-				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-
-				// Set up only the expected calls (any calls without the expected file params will return null)
-				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
-						It.Is<UpdateFileParameters>(fp => fp.Files.Count == CommandUtilities.BatchSize && fp.ExportPatterns.Count == CommandUtilities.BatchSize)))
-					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
-					.Verifiable("first (full) batch");
-				_mockClient.Setup(x => x.UpdateFile(It.IsAny<string>(), It.IsAny<ProjectCredentials>(),
-						It.Is<UpdateFileParameters>(fp => fp.Files.Count == secondBatchSize && fp.ExportPatterns.Count == secondBatchSize)))
-					.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted)))
-					.Verifiable("second batch");
-				var result = await UpdateCommand.UpdateFilesInCrowdin(configurationBuilder, new UpdateCommand.Options(), mockFileSystem);
-				_mockClient.Verify();
-				Assert.Equal(0, result);
+				_mockHttpClient.VerifyNoOutstandingExpectation();
 			}
 		}
 	}

@@ -15,7 +15,8 @@ namespace OvercrowdinTests
 		}
 
 		[Fact]
-		public static void TranslatableElementsMatch_Passes() {
+		public static void TranslatableElementsMatch_Passes()
+		{
 			var doc = XDocument.Load(new StringReader(XmlOpenTag + XmlGroupCorrect + XmlCloseTag));
 			// ReSharper disable once CoVariantArrayConversion - precreating a 2D array is necessary to replicate production behavior
 			Assert.True(XmlFilter.HasTranslatableItems(doc, XpathArrToTranslatableElements));
@@ -42,7 +43,7 @@ namespace OvercrowdinTests
 			Assert.True(XmlFilter.HasTranslatableItems(doc, xPaths));
 		}
 
-		internal static readonly string[][] XpathArrToTranslatableElements = {new[] {XpathToTranslatableElements}};
+		internal static readonly string[][] XpathArrToTranslatableElements = { new[] { XpathToTranslatableElements } };
 		internal const string XpathToTranslatableElements = "/strings//group/string[@txt]";
 		internal const string XpathToWrongAttribute = "/strings//group/string[@wrong]";
 		internal const string XmlOpenTag = @"<?xml version='1.0' encoding='UTF-8'?><strings>";

@@ -1,20 +1,37 @@
 using System;
 using System.IO.Abstractions.TestingHelpers;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Crowdin.Api;
-using Crowdin.Api.Typed;
-using Moq;
 using Overcrowdin;
+using RichardSzalay.MockHttp;
 using Xunit;
 
 namespace OvercrowdinTests
 {
 	public class DownloadCommandTests : CrowdinApiTestBase
 	{
+		private const int _testProjId = 44444;
+
+		private void MockPrepareToDownload(int projectId, string projectName, bool useBranch, string branch)
+		{
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}','targetLanguages':[{{'id':'fr','name':'French'}}]}}}}]}}");
+			if (useBranch)
+			{
+				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=25&offset=0").Respond(
+					"application/json", $"{{'data':[{{'name':'{branch}', 'id':1}}]}}");
+			}
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
+				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}','targetLanguages':[{{'id':'fr','name':'French'}}]}}}}]}}");
+			if (useBranch)
+			{
+				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=500&offset=0").Respond(
+					"application/json", $"{{'data':[{{'name':'{branch}', 'id':1}}]}}");
+			}
+		}
+
 		[Fact]
-		public async void MissingApiKeyReturnsFailure()
+		public async Task MissingApiKeyReturnsFailure()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string apiKeyEnvVar = "NOKEYEXISTS";
@@ -22,91 +39,106 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
 			_mockConfig.Setup(config => config["base_path"]).Returns(".");
-			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { ExportFirst = true, Filename = "done.zip" }, mockFileSystem.FileSystem);
-			_mockClient.Verify();
+			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { Filename = "done.zip" }, mockFileSystem.FileSystem, MockApiFactory);
 			Assert.Equal(1, result);
 		}
 
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void ExportFirstTrueCallsExportAndDownload(bool useBranch)
+		public async Task ExportFirstTrueCallsExportAndDownload(bool useBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string outputFileName = "test.zip";
 			const string apiKeyEnvVar = "EXPORTKEYFORTEST";
-			const string projectId = "testcrowdinproject";
+			const string projectName = "testcrowdinproject";
 			const string baseDir = "test";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakeapikey");
 			var branch = useBranch ? "some-branch" : null;
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
 			_mockConfig.Setup(config => config["base_path"]).Returns(baseDir);
 			_mockConfig.Setup(config => config["branch"]).Returns(branch);
 			// Set up the calls to Export and Download
-			_mockClient.Setup(client => client.ExportTranslation(projectId, It.IsAny<ProjectCredentials>(),
-					It.IsAny<ExportTranslationParameters>()))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted))).Verifiable();
-			_mockClient.Setup(client => client.GetExportStatus(projectId, It.IsAny<ProjectCredentials>(),
-				It.Is<GetTranslationExportStatusParameters>(p => p.Branch == branch)))
-				.Returns(Task.FromResult(ExportCommandTests.ExportStatusFinished));
-			_mockClient.Setup(client => client.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(),
-					It.Is<DownloadTranslationParameters>(p => p.Branch == branch)))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted) {Content = new ByteArrayContent(new byte[] {0x50, 0x4b, 0x03, 0x04})}));
 			mockFileSystem.Directory.CreateDirectory(baseDir);
-			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { ExportFirst = true, Filename = outputFileName }, mockFileSystem.FileSystem);
-			_mockClient.Verify(x => x.ExportTranslation(projectId, It.IsAny<ProjectCredentials>(), It.IsAny<ExportTranslationParameters>()), Times.Exactly(1));
-			_mockClient.Verify(x => x.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(), It.IsAny<DownloadTranslationParameters>()), Times.Exactly(1));
+			MockPrepareToDownload(_testProjId, projectName, useBranch, branch);
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects/44444/translations/builds?limit=500&offset=0")
+				.Respond("application/json", $"{{'data':[]}}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects/44444/languages/progress?limit=500&offset=0").Respond("application/json",
+				"{'data':[{'data': {'languageId': 'fr', 'translationProgress': 81, 'approvalProgress': 18 } }]}");
+			_mockHttpClient.Expect(HttpMethod.Post, "https://api.crowdin.com/api/v2/projects/44444/translations/builds").Respond("application/json", "{}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects/44444/translations/builds/0/download").Respond("application/json", "{'url':'https://fakeurl.com'}");
+
+			_mockHttpClient.Expect("https://fakeurl.com").Respond("application/octet-stream", "junk");
+			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { Filename = outputFileName }, mockFileSystem.FileSystem, MockApiFactory, new MockHttpClientFactory(_mockHttpClient));
 			Assert.Equal(0, result);
+			_mockHttpClient.VerifyNoOutstandingExpectation();
 		}
 
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
-		public async void ExportFirstFalseSkipsExportAndCallsDownload(bool useBranch)
+		public async Task ExportWithRecentBuildSkipsExportAndCallsDownload(bool useBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string outputFileName = "test.zip";
 			const string apiKeyEnvVar = "EXPORTKEYFORTEST";
-			const string projectId = "testcrowdinproject";
+			const string projectName = "testcrowdinproject";
 			const string baseDir = "test";
 			var branch = useBranch ? "some-branch" : null;
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakeapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
 			_mockConfig.Setup(config => config["base_path"]).Returns(baseDir);
 			_mockConfig.Setup(config => config["branch"]).Returns(branch);
 			// Set up the call to Download
-			_mockClient.Setup(client => client.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(),
-					It.Is<DownloadTranslationParameters>(p => p.Branch == branch)))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.Accepted) { Content = new ByteArrayContent(new byte[] { 0x50, 0x4b, 0x03, 0x04 }) }));
 			mockFileSystem.Directory.CreateDirectory(baseDir);
-			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { ExportFirst = false, Filename = outputFileName }, mockFileSystem.FileSystem);
-			_mockClient.Verify(x => x.ExportTranslation(projectId, It.IsAny<ProjectCredentials>(), It.IsAny<ExportTranslationParameters>()), Times.Never);
-			_mockClient.Verify(x => x.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(), It.IsAny<DownloadTranslationParameters>()), Times.Exactly(1));
+			MockPrepareToDownload(_testProjId, projectName, useBranch, branch);
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects/44444/translations/builds?limit=500&offset=0")
+				.Respond("application/json", $"{{'data':[{{'data': {{'projectId': {_testProjId},'attributes':{{'branchId':{(useBranch ? "1" : "null")}, 'targetLanguageIds':['fr']}}, 'status': 'finished', 'finishedAt':'{DateTime.Now}'}}}}]}}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects/44444/languages/progress?limit=500&offset=0").Respond("application/json",
+				"{'data':[{'data': {'languageId': 'fr', 'translationProgress': 81, 'approvalProgress': 18 } }]}");
+			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects/44444/translations/builds/0/download").Respond("application/json", "{'url':'https://fakeurl.com'}");
+
+			_mockHttpClient.Expect("https://fakeurl.com").Respond("application/octet-stream", "junk");
+			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { Filename = outputFileName }, mockFileSystem.FileSystem, MockApiFactory, new MockHttpClientFactory(_mockHttpClient));
 			Assert.Equal(0, result);
+			_mockHttpClient.VerifyNoOutstandingExpectation();
 		}
 
 		[Fact]
-		public async void ErrorsAreReported()
+		public async Task ErrorsAreReported()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string outputFileName = "test.zip";
 			const string apiKeyEnvVar = "EXPORTKEYFORTEST";
-			const string projectId = "testcrowdinproject";
+			const string projectName = "testcrowdinproject";
+			const int projectId = _testProjId;
 			const string baseDir = "test";
 			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakeapikey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectId);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
 			_mockConfig.Setup(config => config["base_path"]).Returns(baseDir);
-			var options = new DownloadCommand.Options {ExportFirst = false, Filename = outputFileName};
+			var options = new DownloadCommand.Options { Filename = outputFileName };
 			// Set up the call to Download
-			_mockClient.Setup(client => client.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(), It.IsAny<DownloadTranslationParameters>()))
-				.Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)));
 			mockFileSystem.Directory.CreateDirectory(baseDir);
-			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, options, mockFileSystem.FileSystem);
-			_mockClient.Verify(x => x.DownloadTranslation(projectId, It.IsAny<ProjectCredentials>(), It.IsAny<DownloadTranslationParameters>()), Times.Exactly(1));
+			MockPrepareToDownload(projectId, projectName, false, null);
+			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, options, mockFileSystem.FileSystem, MockApiFactory);
 			Assert.Equal(1, result);
+		}
+	}
+
+	public class MockHttpClientFactory : IHttpClientFactory
+	{
+		private readonly MockHttpMessageHandler _mock;
+		public MockHttpClientFactory(MockHttpMessageHandler mockHttpMessageHandler)
+		{
+			_mock = mockHttpMessageHandler;
+		}
+
+		public HttpClient GetClient()
+		{
+			return _mock.ToHttpClient();
 		}
 	}
 }
