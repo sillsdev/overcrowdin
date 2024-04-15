@@ -28,7 +28,6 @@ namespace Overcrowdin
 				.AddEnvironmentVariables()
 				.AddCommandLine(args)
 				.Build();
-			int result = 1;
 			var parseResult = Parser.Default.ParseArguments<UpdateCommand.Options,
 					AddCommand.Options, DownloadCommand.Options>(args);
 			await parseResult.WithParsedAsync<UpdateCommand.Options>(async opts =>
@@ -43,7 +42,7 @@ namespace Overcrowdin
 			{
 				await DownloadCommand.DownloadFromCrowdin(config, opts, fileSystem, clientFactory);
 			});
-			return parseResult.Tag is ParserResultType.NotParsed ? 1 : result;
+			return parseResult.Tag is ParserResultType.NotParsed ? 1 : 0;
 		}
 	}
 }
