@@ -1,9 +1,6 @@
 using System;
 using System.IO;
 using System.IO.Abstractions;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using CommandLine;
 using Microsoft.Extensions.Configuration;
@@ -18,10 +15,11 @@ namespace Overcrowdin
 			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
 			public string Branch { get; set; }
 
-			[Option('l', Required = false, Default = "all", HelpText = "The language to download the translations for or 'all' to download for every language.")]
+			[Obsolete] // REVIEW (Hasso) 2025.11: this has been unused for some time
+			[Option('l', Required = false, Default = "all", HelpText = "Ignored.")]
 			public string Language { get; set; }
 
-			[Option('f', Required = true, HelpText = "Path and filename relative to the configured basepath for the zip file.")]
+			[Option('f', Required = true, HelpText = "Path and filename relative to the configured base path for the zip file.")]
 			public string Filename { get; set; }
 		}
 
@@ -38,12 +36,7 @@ namespace Overcrowdin
 			{
 				var crowdinDownloadHelper = await CrowdInDownloadHelper.Create(credentials, fs, apiFactory, factory);
 				var result = await crowdinDownloadHelper.DownloadTranslations(outputFile);
-				if (!result)
-				{
-					return 1;
-				}
-
-				return 0;
+				return result ? 0 : 1;
 			}
 			catch (Exception e)
 			{
