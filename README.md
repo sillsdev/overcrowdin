@@ -9,7 +9,7 @@ This project is not yet feature complete with the Crowdin client. It was built t
 
 ### Requirements
 
-* .NET Core 2.1 : To install and use Overcrowdin, you need .NET Core 2.1, which can be downloaded from <a href="https://dotnet.microsoft.com/download/dotnet-core/2.1" target="_blank">Microsoft's website</a>.
+* .NET 8.0: To install and use Overcrowdin, you need .NET 8.0, which can be downloaded from <a href="https://dotnet.microsoft.com/download/dotnet/8.0" target="_blank">Microsoft's website</a>.
 
 ### Installation
 
@@ -40,10 +40,10 @@ A: I don't want to make it easy to commit secrets into a github repository so I 
 
 
 #### Developer Requirements
-* .NET Core 2.1
+* .NET 8.0
 
 #### Recommendations
-* Visual Studio Community Edition 2017 or later
+* Visual Studio Community Edition 2022 or later
 
 #### Cloning
 ```git clone https://github.com/sillsdev/overcrowdin```
