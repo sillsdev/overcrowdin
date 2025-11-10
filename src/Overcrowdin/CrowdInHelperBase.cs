@@ -205,12 +205,13 @@ namespace Overcrowdin
 			foreach (var dir in dirs)
 			{
 				directory = _existingDirectories.Find(d =>
-					d.BranchId == _branchId && string.Equals(d.Name, dir, StringComparison.OrdinalIgnoreCase));
+					d.BranchId == _branchId && d.DirectoryId == parentDir && string.Equals(d.Name, dir, StringComparison.OrdinalIgnoreCase));
 				if (directory == null)
 				{
-					AddDirectoryRequest request = new AddDirectoryRequest
+					var request = new AddDirectoryRequest
 					{
-						Name = dir
+						Name = dir,
+						//ExportPattern = "TODO" (Hasso) 2025.11
 					};
 					if (parentDir != 0)
 					{
@@ -222,8 +223,8 @@ namespace Overcrowdin
 					}
 					directory = await _fileExecutor.AddDirectory(_project.Id, request);
 					_existingDirectories.Add(directory);
-					parentDir = directory.Id;
 				}
+				parentDir = directory.Id;
 			}
 
 			// Create new storage for the file and upload it.
