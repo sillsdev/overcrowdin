@@ -73,7 +73,7 @@ namespace Overcrowdin
 			int filesDeleted = 0;
 			foreach (FileInfoCollectionResource file in _existingFiles)
 			{
-				await _executor.DeleteFile(_project.Id, file.Id);
+				await _fileExecutor.DeleteFile(_project.Id, file.Id);
 				filesDeleted++;
 			}
 

@@ -5,13 +5,15 @@ using System.IO.Abstractions;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Crowdin.Api;
+using Crowdin.Api.Branches;
 using Crowdin.Api.ProjectsGroups;
 using Crowdin.Api.SourceFiles;
 using Crowdin.Api.Storage;
 using Crowdin.Api.Translations;
+using AddBranchRequest = Crowdin.Api.Branches.AddBranchRequest;
+using Branch = Crowdin.Api.Branches.Branch;
 using Directory = Crowdin.Api.SourceFiles.Directory;
 using File = Crowdin.Api.SourceFiles.File;
 
@@ -21,20 +23,21 @@ namespace Overcrowdin
 	{
 		#region Member variables
 		protected readonly ICrowdinApiClient _client;
-		protected readonly SourceFilesApiExecutor _executor;
+		protected readonly IBranchesApiExecutor _branchExecutor;
+		protected readonly SourceFilesApiExecutor _fileExecutor;
 
 		private readonly string _projectStr;
 		private readonly string _branch;
 
 		protected Project _project;
-		protected int? _branchId;
+		protected long? _branchId;
 
 		protected List<TranslationProjectBuild> _existingTranslationBuilds;
 		protected List<FileInfoCollectionResource> _existingFiles;
 		protected List<Directory> _existingDirectories;
 
-		private IFileSystem _fileSystem;
-		private IHttpClientFactory _httpClientFactory = new DefaultHttpClientFactory();
+		private readonly IFileSystem _fileSystem;
+		private readonly IHttpClientFactory _httpClientFactory = new DefaultHttpClientFactory();
 
 		private class DefaultHttpClientFactory : IHttpClientFactory
 		{
@@ -51,7 +54,8 @@ namespace Overcrowdin
 			_projectStr = settings.Project;
 			_branch = string.IsNullOrEmpty(settings.Branch) ? "None" : settings.Branch;
 			_client = apiFactory.Create(settings.AccessToken);
-			_executor = new SourceFilesApiExecutor(_client);
+			_branchExecutor = new BranchesApiExecutor(_client);
+			_fileExecutor = new SourceFilesApiExecutor(_client);
 			_fileSystem = fs;
 			if (factory != null)
 				_httpClientFactory = factory;
@@ -81,7 +85,7 @@ namespace Overcrowdin
 		protected virtual async Task<bool> InitializeInternal()
 		{
 			Console.WriteLine("    Checking project...");
-			List<Project> projects = await GetFullList((offset, count) => _client.ProjectsGroups.ListProjects<Project>(null, null, false, count, offset));
+			List<Project> projects = await GetFullList((offset, count) => _client.ProjectsGroups.ListProjects<Project>(limit: count, offset: offset));
 
 			Console.WriteLine("Recognized projects...");
 			foreach (var proj in projects)
@@ -104,7 +108,7 @@ namespace Overcrowdin
 			}
 
 			Console.WriteLine("    Checking branch...");
-			List<Branch> branches = await GetFullList((offset, count) => _executor.ListBranches(_project.Id, null, count, offset));
+			List<Branch> branches = await GetFullList((offset, count) => _branchExecutor.ListBranches(_project.Id, null, count, offset));
 			if (int.TryParse(_branch, out var branchNbr))
 				_branchId = branchNbr;
 			else
@@ -113,7 +117,7 @@ namespace Overcrowdin
 			if (!branches.Exists(p => p.Id == _branchId))
 			{
 				Console.WriteLine($"Branch matching '{_branch}' could not be found in the project {_projectStr}, adding it.");
-				var addedBranch = await _client.SourceFiles.AddBranch(_project.Id, new AddBranchRequest { Name = _branch });
+				var addedBranch = await _branchExecutor.AddBranch(_project.Id, new AddBranchRequest { Name = _branch });
 				_branchId = addedBranch.Id;
 				return true;
 			}
@@ -124,10 +128,10 @@ namespace Overcrowdin
 		protected async Task<bool> PrepareForUploads()
 		{
 			Console.WriteLine("    Loading existing file list...");
-			_existingFiles = await GetFullList((offset, count) => _executor.ListFiles<FileInfoCollectionResource>(_project.Id, count, offset, _branchId, recursion: 1));
+			_existingFiles = await GetFullList((offset, count) => _fileExecutor.ListFiles<FileInfoCollectionResource>(_project.Id, count, offset, _branchId, recursion: 1));
 
 			Console.WriteLine("    Loading existing directory list...");
-			_existingDirectories = await GetFullList((offset, count) => _executor.ListDirectories(_project.Id, count, offset, _branchId));
+			_existingDirectories = await GetFullList((offset, count) => _fileExecutor.ListDirectories(_project.Id, count, offset, _branchId));
 
 			// Clean up any storage that was being used previously.
 			// This should be rare since we delete the storage after successfully uploading a file.
@@ -161,7 +165,7 @@ namespace Overcrowdin
 		protected async Task<bool> BuildAndDownload(string outputPath, List<string> readyLanguages, bool skipUntranslated, DateTimeOffset buildCutoffTime)
 		{
 			// Cheack to see if an existing build has already been created for the languages that are ready
-			int? buildId = _existingTranslationBuilds.Find(tb =>
+			long? buildId = _existingTranslationBuilds.Find(tb =>
 				tb.FinishedAt > buildCutoffTime && (_branchId == null || tb.Attributes.BranchId == _branchId) &&
 				tb.Attributes.TargetLanguageIds.All(id => readyLanguages.Contains(id)))?.Id;
 
@@ -197,7 +201,7 @@ namespace Overcrowdin
 			Directory directory = null;
 			// split on the path separator so we can create all the necessary parent folders
 			var dirs = parentDirectory.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
-			var parentDir = 0;
+			var parentDir = 0L;
 			foreach (var dir in dirs)
 			{
 				directory = _existingDirectories.Find(d =>
@@ -216,7 +220,7 @@ namespace Overcrowdin
 					{
 						request.BranchId = _branchId;
 					}
-					directory = await _executor.AddDirectory(_project.Id, request);
+					directory = await _fileExecutor.AddDirectory(_project.Id, request);
 					_existingDirectories.Add(directory);
 					parentDir = directory.Id;
 				}
@@ -240,7 +244,7 @@ namespace Overcrowdin
 					UpdateOption = FileUpdateOption.KeepTranslationsAndApprovals
 				};
 
-				ValueTuple<File, bool?> response = await _executor.UpdateOrRestoreFile(_project.Id, existingFile.Id, request);
+				ValueTuple<File, bool?> response = await _fileExecutor.UpdateOrRestoreFile(_project.Id, existingFile.Id, request);
 				_existingFiles.Remove(existingFile);
 				Console.WriteLine($"Updated file {response.Item1.Path} ({(response.Item2 == true ? "modified" : "no change")})");
 			}
@@ -260,7 +264,7 @@ namespace Overcrowdin
 				if (request.BranchId == null && request.DirectoryId == null)
 					request.DirectoryId = 0;
 
-				var newFile = await _executor.AddFile(_project.Id, request);
+				var newFile = await _fileExecutor.AddFile(_project.Id, request);
 				Console.WriteLine($"Added file {newFile.Path}");
 			}
 
@@ -271,7 +275,7 @@ namespace Overcrowdin
 		#endregion
 
 		#region Private helper methods
-		private async Task<int?> BuildTranslation(List<string> languages, bool skipUntranslated)
+		private async Task<long?> BuildTranslation(List<string> languages, bool skipUntranslated)
 		{
 			Console.WriteLine($"Starting translation build for {string.Join(", ", languages)}...");
 
