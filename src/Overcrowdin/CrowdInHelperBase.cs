@@ -258,7 +258,12 @@ namespace Overcrowdin
 					StorageId = storage.Id,
 					BranchId = _branchId,
 					DirectoryId = directory?.Id,
-					Type = fileType
+					Type = fileType,
+					//ImportOptions = new XmlFileImportOptions
+					//{
+					//	ContentSegmentation = TODO
+					//}
+					//ExportOptions = new GeneralFileExportOptions { ExportPattern = null }
 				};
 
 				// appears that both values can't be null, so try using 0 for directory id

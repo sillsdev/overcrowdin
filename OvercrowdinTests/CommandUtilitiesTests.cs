@@ -30,39 +30,6 @@ namespace OvercrowdinTests
 			Assert.Null(result);
 		}
 
-		private static MockFileSystem SetUpDirectoryStructure()
-		{
-			var fileSys = new MockFileSystem();
-			fileSys.Directory.CreateDirectory("jane/doe");
-			fileSys.Directory.CreateDirectory("john/doe");
-			fileSys.Directory.CreateDirectory("john/quincy/adams");
-			fileSys.Directory.CreateDirectory("john/quincy/doe");
-			fileSys.File.WriteAllText("test.txt", "contents");
-			fileSys.File.WriteAllText("jane/test.txt", "contents");
-			fileSys.File.WriteAllText("jane/doe/test.txt", "contents");
-			fileSys.File.WriteAllText("john/test.txt", "contents");
-			fileSys.File.WriteAllText("john/doe/test.txt", "contents");
-			fileSys.File.WriteAllText("john/quincy/test.txt", "contents");
-			fileSys.File.WriteAllText("john/quincy/adams/test.txt", "contents");
-			fileSys.File.WriteAllText("john/quincy/adams/allonym.txt", "contents");
-			fileSys.File.WriteAllText("john/quincy/doe/test.txt", "contents");
-			return fileSys;
-		}
-
-		private static JObject SetUpConfig(string fileSourceGlob, string basePath = ".")
-		{
-			dynamic configJson = new JObject();
-
-			configJson.project_id = "testcrowdinproject";
-			configJson.api_key_env = "KEYEXISTS";
-			configJson.base_path = basePath;
-			dynamic file = new JObject();
-			file.source = fileSourceGlob;
-			var files = new JArray { file };
-			configJson.files = files;
-			return configJson;
-		}
-
 		[Fact]
 		public void PathsFindFiles()
 		{
@@ -325,10 +292,14 @@ namespace OvercrowdinTests
 			mockFileSystem.File.WriteAllText(fileName1, "<cheese><wheel>swiss</wheel></cheese>");
 			dynamic configJson = SetUpConfig(fileName0);
 			var files = configJson.files;
+			files[0].translate_content = 0;
+			files[0].translate_attributes = 0;
 			files[0].content_segmentation = 0;
 			files[0].translatable_elements = new JArray { trElt0 };
 			files.Add(new JObject());
 			files[1].source = fileName1;
+			files[1].translate_content = 1;
+			files[1].translate_attributes = 1;
 			files[1].content_segmentation = 1;
 			files[1].translatable_elements = new JArray { trElt1a, trElt1b };
 			var fileParamsList = new List<AddFileParameters>();
@@ -342,18 +313,21 @@ namespace OvercrowdinTests
 			Assert.Equal(2, fileParamsList.Count);
 			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
-			//Assert.False(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
+			Assert.False(fileParams.TranslateContent);
+			Assert.False(fileParams.TranslateAttributes);
+			Assert.False(fileParams.ContentSegmentation);
 			var te = fileParams.TranslatableElements.ToArray();
 			Assert.Single(te);
 			Assert.Contains(trElt0, te);
 			fileParams = fileParamsList[1];
 			Assert.Single(fileParams.Files);
-			//Assert.True(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
+			Assert.True(fileParams.TranslateContent);
+			Assert.True(fileParams.TranslateAttributes);
+			Assert.True(fileParams.ContentSegmentation);
 			te = fileParams.TranslatableElements.ToArray();
 			Assert.Equal(2, te.Length);
 			Assert.Contains(trElt1a, te);
 			Assert.Contains(trElt1b, te);
-			// TODO (Hasso) 2025.11: assert that the tested options are actually passed to Crowdin (perhaps in an integration test in another suite)
 		}
 
 		[Theory]

@@ -147,6 +147,20 @@ namespace OvercrowdinTests
 		}
 
 
+		// TODO (Hasso) 2025.11: test XHL extra options
+		[Fact]
+		public async Task AddCommandWithConfigFileMatchingNoFiles()
+		{
+			var mockFileSystem = new MockFileSystem();
+			// create two sibling files
+			// add sibling flies to config w/ different options
+			var configJson = SetUpConfig();
+			//set up options
+			// call add
+			// test all calls
+		}
+
+
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]

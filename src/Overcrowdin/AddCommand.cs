@@ -51,7 +51,7 @@ namespace Overcrowdin
 				{
 					await uploadHelper.UploadFile(fs.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name);
 				}
-			} while (++i < addFileParamsList.Count && uploadHelper.FileErrorCount == 0);
+			} while (++i < addFileParamsList.Count);
 
 			// Give results
 			if (uploadHelper.FileErrorCount == 0)
