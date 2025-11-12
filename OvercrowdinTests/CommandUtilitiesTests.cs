@@ -325,14 +325,10 @@ namespace OvercrowdinTests
 			mockFileSystem.File.WriteAllText(fileName1, "<cheese><wheel>swiss</wheel></cheese>");
 			dynamic configJson = SetUpConfig(fileName0);
 			var files = configJson.files;
-			files[0].translate_content = 0;
-			files[0].translate_attributes = 0;
 			files[0].content_segmentation = 0;
 			files[0].translatable_elements = new JArray { trElt0 };
 			files.Add(new JObject());
 			files[1].source = fileName1;
-			files[1].translate_content = 1;
-			files[1].translate_attributes = 1;
 			files[1].content_segmentation = 1;
 			files[1].translatable_elements = new JArray { trElt1a, trElt1b };
 			var fileParamsList = new List<AddFileParameters>();
@@ -346,21 +342,18 @@ namespace OvercrowdinTests
 			Assert.Equal(2, fileParamsList.Count);
 			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
-			Assert.False(fileParams.TranslateContent);
-			Assert.False(fileParams.TranslateAttributes);
 			//Assert.False(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
 			var te = fileParams.TranslatableElements.ToArray();
 			Assert.Single(te);
 			Assert.Contains(trElt0, te);
 			fileParams = fileParamsList[1];
 			Assert.Single(fileParams.Files);
-			Assert.True(fileParams.TranslateContent);
-			Assert.True(fileParams.TranslateAttributes);
 			//Assert.True(fileParams.ContentSegmentation); // TODO (Hasso) 2020.01: support this whenever Crowdin does
 			te = fileParams.TranslatableElements.ToArray();
 			Assert.Equal(2, te.Length);
 			Assert.Contains(trElt1a, te);
 			Assert.Contains(trElt1b, te);
+			// TODO (Hasso) 2025.11: assert that the tested options are actually passed to Crowdin (perhaps in an integration test in another suite)
 		}
 
 		[Theory]

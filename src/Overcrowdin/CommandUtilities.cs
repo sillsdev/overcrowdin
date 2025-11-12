@@ -107,9 +107,15 @@ namespace Overcrowdin
 				var translatableElements = section.GetSection("translatable_elements").GetChildren().Select(te => te.Get<string>()).ToList();
 				if (fileParams is AddFileParameters addFileParams)
 				{
-					addFileParams.TranslateContent = GetIntAsBool(section, "translate_content");
-					addFileParams.TranslateAttributes = GetIntAsBool(section, "translate_attributes");
 					//addFileParams.ContentSegmentation = GetIntAsBool(section, "content_segmentation"); // TODO (Hasso) 2020.01: support this whenever Crowdin does
+					if (section.GetValue<int?>("translate_content") != null)
+					{
+						Console.WriteLine("Warning: the option translate_content is no longer supported by overcrowdin!");
+					}
+					if (section.GetValue<int?>("translate_attributes") != null)
+					{
+						Console.WriteLine("Warning: the option translate_attributes is no longer supported by overcrowdin!");
+					}
 					if (section.GetValue<int?>("content_segmentation") != null)
 					{
 						Console.WriteLine("Warning: the option content_segmentation is not yet supported by the crowdin-dotnet-client!");
@@ -119,6 +125,10 @@ namespace Overcrowdin
 						Console.WriteLine("Warning: the option import_translations is not yet supported by overcrowdin!");
 					}
 					addFileParams.TranslatableElements = translatableElements;
+					if (translatableElements.Any())
+					{
+						Console.WriteLine("Warning: translatable_elements is used only to determine whether to upload a file; the patterns are not passed to Crowdin!");
+					}
 				}
 
 				var matcher = new Matcher();
@@ -187,6 +197,8 @@ namespace Overcrowdin
 			// On Windows, each Path call normalizes to '\', but we are normalizing to '/' for cross-platform compatibility.
 			return Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
 		}
+
+		/// <remarks>REVIEW (Hasso) 2025.11: this is no longer needed in API v2</remarks>>
 		public static T[] BatchFiles<T>(T allFiles) where T : FileParameters, new()
 		{
 			return new[] { allFiles };
@@ -208,6 +220,7 @@ namespace Overcrowdin
 	{
 		public bool TranslateContent;
 		public bool TranslateAttributes;
+		public bool ContentSegmentation;
 		public List<string> TranslatableElements;
 	}
 

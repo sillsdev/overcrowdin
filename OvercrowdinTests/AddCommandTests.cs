@@ -147,7 +147,6 @@ namespace OvercrowdinTests
 		}
 
 
-		// ENHANCE (Hasso) 2020.01: verify that the folder is created *before* the file is added, and the branch before the folder
 		[Theory]
 		[InlineData(true)]
 		[InlineData(false)]
@@ -164,15 +163,63 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
 			_mockConfig.Setup(config => config["branch"]).Returns(branch);
 			MockPrepareToAddFilesWithBranch(makeBranch, projectId, projectName, branch);
-			//// SUT
-			_mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/directories").WithPartialContent("\"name\":\"relative\"").Respond("application/json", "{}");
-			_mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/directories").WithPartialContent("\"name\":\"path\"").Respond("application/json", "{}");
+			ExpectDirectory(projectId, "relative");
+			ExpectDirectory(projectId, "path");
 			MockAddFile(projectId, inputFileName, mockFileSystem);
+			//// SUT
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
 				new AddCommand.Options { Files = new[] { inputFileName } },
 				mockFileSystem, MockApiFactory);
-			Assert.Equal(0, result);
 			_mockHttpClient.VerifyNoOutstandingExpectation();
+			Assert.Equal(0, result);
+		}
+
+		[Fact]
+		public async Task AddCommandCreatesFolderStructure()
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string inputFileName1 = "Src/Common/Program/Properties/Resources.resx";
+			const string inputFileName2 = "Src/Common/Library/Properties/Resources.resx";
+			const string projectName = "testcrowdinproject";
+			const int projectId = 369681;
+			const string branch = "branchName";
+			const string apiKeyEnvVar = "KEYEXISTS";
+			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
+			_mockConfig.Setup(config => config["branch"]).Returns(branch);
+			MockPrepareToAddFilesWithBranch(true, projectId, projectName, branch);
+			ExpectDirectory(projectId, "Src", 1);
+			ExpectDirectory(projectId, "Common", 2, 1);
+			ExpectDirectory(projectId, "Program", 3, 2);
+			ExpectDirectory(projectId, "Properties", 4, 3);
+			MockAddFile(projectId, inputFileName1, mockFileSystem);
+			ExpectDirectory(projectId, "Library", 5, 2);
+			ExpectDirectory(projectId, "Properties", 6, 5);
+			MockAddFile(projectId, inputFileName2, mockFileSystem);
+			//// SUT
+			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
+				new AddCommand.Options { Files = new[] { inputFileName1, inputFileName2 } },
+				mockFileSystem, MockApiFactory);
+			_mockHttpClient.VerifyNoOutstandingExpectation();
+			Assert.Equal(0, result);
+		}
+
+		private MockedRequest ExpectDirectory(int projectId, string name, int? id = null, int? parent = null)
+		{
+			var request = _mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/directories")
+				.WithPartialContent($"\"name\":\"{name}\"");
+			if(parent != null)
+			{
+				request.WithPartialContent($"\"directoryId\":{parent}");
+			}
+			return request.Respond("application/json", $$$"""
+				{"data": {
+					"name": "{{{name}}}",
+					"id": {{{id?.ToString() ?? "null"}}},
+					"directoryId": {{{parent?.ToString() ?? "null"}}},
+				}}
+				""");
 		}
 
 		[Theory]

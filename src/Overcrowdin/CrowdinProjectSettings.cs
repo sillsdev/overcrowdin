@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Crowdin.Api.ProjectsGroups;
-using Crowdin.Api.SourceFiles;
+using Crowdin.Api.Branches;
 
 namespace Overcrowdin
 {
@@ -11,8 +11,8 @@ namespace Overcrowdin
 		public readonly string AccessToken;
 		public readonly string Project;
 		public readonly string Branch;
-		public int ProjectId;
-		public int BranchId;
+		public long ProjectId;
+		public long BranchId;
 
 		private CrowdinProjectSettings(string project, string branchName, string accessToken)
 		{
@@ -31,8 +31,8 @@ namespace Overcrowdin
 				settings.ProjectId = projects.Data.First(p => p.Identifier == project).Id;
 				if (!string.IsNullOrEmpty(branchName))
 				{
-					var sourceExecutor = new SourceFilesApiExecutor(apiInstance);
-					var branches = await sourceExecutor.ListBranches(settings.ProjectId);
+					var executor = new BranchesApiExecutor(apiInstance);
+					var branches = await executor.ListBranches(settings.ProjectId);
 					var branch = branches.Data.FirstOrDefault(b => b.Name == branchName);
 					settings.BranchId = branch?.Id ?? 0;
 				}
