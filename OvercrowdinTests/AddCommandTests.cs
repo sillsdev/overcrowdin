@@ -30,13 +30,16 @@ namespace OvercrowdinTests
 			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
 				"application/json", $"{{'data':[]}}");
 		}
-		private void MockAddFile(int projectId, string inputFileName, MockFileSystem mockFileSystem)
+
+		/// <returns>The MockedRequest expectation to add the file to the project</returns>
+		private MockedRequest MockAddFile(MockFileSystem mockFileSystem, int projectId, string inputFileName, string fileContent = "irrelevant")
 		{
-			mockFileSystem.AddFile(inputFileName, new MockFileData("irrelevant"));
+			mockFileSystem.AddFile(inputFileName, new MockFileData(fileContent));
 			_mockHttpClient.Expect(HttpMethod.Post, "https://api.crowdin.com/api/v2/storages")
 				.WithHeaders("Crowdin-API-FileName", $"{Path.GetFileName(inputFileName)}").Respond("application/json", "{}");
-			_mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/files").Respond("application/json", "{}");
+			var addFileRequest = _mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/files").Respond("application/json", "{}");
 			_mockHttpClient.Expect(HttpMethod.Delete, "https://api.crowdin.com/api/v2/storages/0").Respond(HttpStatusCode.NoContent, "application/json", "{}");
+			return addFileRequest;
 		}
 
 		private void MockPrepareToAddFilesWithBranch(bool makeBranch, int projectId, string projectName, string branch)
@@ -79,7 +82,7 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
 			MockPrepareToAddFile(projectId, projectName);
-			MockAddFile(projectId, inputFileName, mockFileSystem);
+			MockAddFile(mockFileSystem, projectId, inputFileName);
 			// Set up only the expected call to AddFile (any calls without the expected file params will return null)
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object, new AddCommand.Options { Files = new[] { inputFileName } }, mockFileSystem, MockApiFactory);
 			Assert.Equal(0, result);
@@ -111,7 +114,7 @@ namespace OvercrowdinTests
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
 				MockPrepareToAddFile(projectId, projectName);
-				MockAddFile(projectId, inputFileName, mockFileSystem);
+				MockAddFile(mockFileSystem, projectId, inputFileName);
 				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem, MockApiFactory);
 				Assert.Equal(0, result);
 				_mockHttpClient.VerifyNoOutstandingExpectation();
@@ -123,41 +126,68 @@ namespace OvercrowdinTests
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName = "no-existe.txt";
-			const string apiKeyEnvVar = "KEYEXISTS";
-			const string projectName = "testcrowdinproject";
-			const int projectId = 444444;
-			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
+			Environment.SetEnvironmentVariable(TestApiKeyEnv, "fakecrowdinapikey");
 
 			dynamic configJson = new JObject();
-			configJson.project_identifier = projectName;
-			configJson.api_key_env = apiKeyEnvVar;
+			configJson.project_identifier = TestProjectName;
+			configJson.api_key_env = TestApiKeyEnv;
 			configJson.base_path = ".";
 			dynamic file = new JObject();
 			file.source = inputFileName;
 			var files = new JArray { file };
 			configJson.files = files;
 
-			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
-			{
-				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
-				MockPrepareToAddFile(projectId, projectName);
-				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem, MockApiFactory);
-				Assert.Equal(0, result);
-			}
+			using var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString()));
+			var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+			MockPrepareToAddFile(TestProjectId, TestProjectName);
+			var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem, MockApiFactory);
+			Assert.Equal(0, result);
 		}
 
 
-		// TODO (Hasso) 2025.11: test XHL extra options
+		/// <summary>
+		/// Integration test that two XML files in the same folder can have distinct XML options.
+		/// </summary>
 		[Fact]
-		public async Task AddCommandWithConfigFileMatchingNoFiles()
+		public async Task AddCommandWithConfigFileWithXMLOptions()
 		{
 			var mockFileSystem = new MockFileSystem();
-			// create two sibling files
-			// add sibling flies to config w/ different options
-			var configJson = SetUpConfig();
-			//set up options
-			// call add
-			// test all calls
+			const int projectId = 75309;
+			const string fileName0 = "testA.xml";
+			const string fileName1 = "testB.xml";
+			const string fileContents0 = "<string txt='something'/>";
+			const string fileContents1 = "<cheese><wheel>swiss</wheel></cheese>";
+			const string trElt0 = "//string[@txt]";
+			const string trElt1A = "/cheese/wheel";
+			const string trElt1B = "/round[@round]";
+			dynamic configJson = SetUpConfig(fileName0);
+			var files = configJson.files;
+			files[0].translate_content = 0;
+			files[0].translate_attributes = 0;
+			files[0].content_segmentation = 0;
+			files[0].translatable_elements = new JArray { trElt0 };
+			files.Add(new JObject());
+			files[1].source = fileName1;
+			files[1].translate_content = 1;
+			files[1].translate_attributes = 1;
+			files[1].content_segmentation = 1;
+			files[1].translatable_elements = new JArray { trElt1A, trElt1B };
+			Environment.SetEnvironmentVariable(TestApiKeyEnv, "key-exists");
+			MockPrepareToAddFile(projectId, TestProjectName);
+			MockAddFile(mockFileSystem, projectId, fileName0, fileContents0).WithPartialContent($"\"translatableElements\":[\"{trElt0}\"]")
+				.WithPartialContent($"\"translateContent\":false")
+				.WithPartialContent($"\"translateAttributes\":false")
+				.WithPartialContent($"\"contentSegmentation\":false");
+			MockAddFile(mockFileSystem, projectId, fileName1, fileContents1).WithPartialContent($"\"translatableElements\":[\"{trElt1A}\",\"{trElt1B}\"]")
+				.WithPartialContent($"\"translateContent\":true")
+				.WithPartialContent($"\"translateAttributes\":true")
+				.WithPartialContent($"\"contentSegmentation\":true");
+			// SUT
+			using var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString()));
+			var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+			var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem, MockApiFactory);
+			_mockHttpClient.VerifyNoOutstandingExpectation();
+			Assert.Equal(0, result);
 		}
 
 
@@ -179,7 +209,7 @@ namespace OvercrowdinTests
 			MockPrepareToAddFilesWithBranch(makeBranch, projectId, projectName, branch);
 			ExpectDirectory(projectId, "relative");
 			ExpectDirectory(projectId, "path");
-			MockAddFile(projectId, inputFileName, mockFileSystem);
+			MockAddFile(mockFileSystem, projectId, inputFileName);
 			//// SUT
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
 				new AddCommand.Options { Files = new[] { inputFileName } },
@@ -207,10 +237,10 @@ namespace OvercrowdinTests
 			ExpectDirectory(projectId, "Common", 2, 1);
 			ExpectDirectory(projectId, "Program", 3, 2);
 			ExpectDirectory(projectId, "Properties", 4, 3);
-			MockAddFile(projectId, inputFileName1, mockFileSystem);
+			MockAddFile(mockFileSystem, projectId, inputFileName1);
 			ExpectDirectory(projectId, "Library", 5, 2);
 			ExpectDirectory(projectId, "Properties", 6, 5);
-			MockAddFile(projectId, inputFileName2, mockFileSystem);
+			MockAddFile(mockFileSystem, projectId, inputFileName2);
 			//// SUT
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
 				new AddCommand.Options { Files = new[] { inputFileName1, inputFileName2 } },
@@ -251,7 +281,7 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
 			MockPrepareToAddFilesWithBranch(makeBranch, projectId, projectName, branch);
-			MockAddFile(projectId, inputFileName, mockFileSystem);
+			MockAddFile(mockFileSystem, projectId, inputFileName);
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
 				new AddCommand.Options { Branch = branch, Files = new[] { inputFileName } }, mockFileSystem, MockApiFactory);
 			Assert.Equal(0, result);
@@ -287,7 +317,7 @@ namespace OvercrowdinTests
 			{
 				var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				MockPrepareToAddFilesWithBranch(makeBranch, projectId, projectName, branch);
-				MockAddFile(projectId, inputFileName, mockFileSystem);
+				MockAddFile(mockFileSystem, projectId, inputFileName);
 				var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem, MockApiFactory);
 				Assert.Equal(0, result);
 				_mockHttpClient.VerifyNoOutstandingExpectation();

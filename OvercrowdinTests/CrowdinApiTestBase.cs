@@ -13,6 +13,10 @@ namespace OvercrowdinTests
 	/// </summary>
 	public class CrowdinApiTestBase
 	{
+		public const int TestProjectId = 44444;
+		public const string TestProjectName = "testcrowdinproject";
+		public const string TestApiKeyEnv = "KEYEXISTS";
+
 		protected readonly Mock<IConfiguration> _mockConfig;
 		protected readonly CrowdinApiClient _mockClient;
 		protected readonly MockHttpMessageHandler _mockHttpClient;
@@ -66,8 +70,8 @@ namespace OvercrowdinTests
 		public static JObject SetUpConfig(string fileSourceGlob, string basePath = ".")
 		{
 			dynamic configJson = new JObject();
-			configJson.project_id = "testcrowdinproject";
-			configJson.api_key_env = "KEYEXISTS";
+			configJson.project_identifier = TestProjectName;
+			configJson.api_key_env = TestApiKeyEnv;
 			configJson.base_path = basePath;
 			dynamic file = new JObject();
 			file.source = fileSourceGlob;

@@ -46,7 +46,7 @@ namespace Overcrowdin
 				var updateFileParameters = updateFileParametersList[i];
 				foreach (var file in updateFileParameters.Files)
 				{
-					await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name);
+					await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name, updateFileParameters);
 				}
 			} while (++i < updateFileParametersList.Count && uploadHelper.FileErrorCount == 0);
 

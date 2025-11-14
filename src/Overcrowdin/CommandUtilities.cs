@@ -159,10 +159,14 @@ namespace Overcrowdin
 			}
 		}
 
-		public static bool GetIntAsBool(IConfiguration config, string key)
+		public static bool? GetIntAsBool(IConfiguration config, string key)
 		{
 			var val = config.GetValue<int?>(key);
-			return val != null && val != 0;
+			if (val == null)
+			{
+				return null;
+			}
+			return val != 0;
 		}
 
 		// ENHANCE (Hasso) 2020.01: optimize for mostly-full directory structures?
@@ -205,11 +209,9 @@ namespace Overcrowdin
 
 	public class AddFileParameters : FileParameters
 	{
-		//[Obsolete("Open an Issue or PR if needed")]
-		public bool TranslateContent;
-		//[Obsolete("Open an Issue or PR if needed")]
-		public bool TranslateAttributes;
-		public bool ContentSegmentation;
+		public bool? TranslateContent;
+		public bool? TranslateAttributes;
+		public bool? ContentSegmentation;
 		public List<string> TranslatableElements;
 	}
 

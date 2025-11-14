@@ -275,7 +275,7 @@ namespace OvercrowdinTests
 				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 				Assert.False(CommandUtilities.GetIntAsBool(config, "zero"));
 				Assert.True(CommandUtilities.GetIntAsBool(config, "one"));
-				Assert.False(CommandUtilities.GetIntAsBool(config, "not_specified"));
+				Assert.Null(CommandUtilities.GetIntAsBool(config, "not_specified"));
 			}
 		}
 
@@ -285,11 +285,13 @@ namespace OvercrowdinTests
 			var mockFileSystem = new MockFileSystem();
 			const string fileName0 = "test.xml";
 			const string fileName1 = "tstB.xml";
+			const string fileName2 = "testC.xml";
 			const string trElt0 = "//string[@txt]";
 			const string trElt1a = "/cheese/wheel";
 			const string trElt1b = "/round[@round]";
 			mockFileSystem.File.WriteAllText(fileName0, "<string txt='something'/>");
 			mockFileSystem.File.WriteAllText(fileName1, "<cheese><wheel>swiss</wheel></cheese>");
+			mockFileSystem.File.WriteAllText(fileName2, "<cheese mouse='Chuck E'/>");
 			dynamic configJson = SetUpConfig(fileName0);
 			var files = configJson.files;
 			files[0].translate_content = 0;
@@ -302,6 +304,8 @@ namespace OvercrowdinTests
 			files[1].translate_attributes = 1;
 			files[1].content_segmentation = 1;
 			files[1].translatable_elements = new JArray { trElt1a, trElt1b };
+			files.Add(new JObject());
+			files[2].source = fileName2;
 			var fileParamsList = new List<AddFileParameters>();
 
 			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
@@ -310,7 +314,7 @@ namespace OvercrowdinTests
 				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
 			}
 
-			Assert.Equal(2, fileParamsList.Count);
+			Assert.Equal(3, fileParamsList.Count);
 			var fileParams = fileParamsList[0];
 			Assert.Single(fileParams.Files);
 			Assert.False(fileParams.TranslateContent);
@@ -328,6 +332,12 @@ namespace OvercrowdinTests
 			Assert.Equal(2, te.Length);
 			Assert.Contains(trElt1a, te);
 			Assert.Contains(trElt1b, te);
+			fileParams = fileParamsList[2];
+			Assert.Single(fileParams.Files);
+			Assert.Null(fileParams.TranslateContent);
+			Assert.Null(fileParams.TranslateAttributes);
+			Assert.Null(fileParams.ContentSegmentation);
+			Assert.Empty(fileParams.TranslatableElements);
 		}
 
 		[Theory]
