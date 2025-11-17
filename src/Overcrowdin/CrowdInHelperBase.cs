@@ -195,7 +195,7 @@ namespace Overcrowdin
 			return true;
 		}
 
-		protected async Task UploadFileInternal(string fileData, string parentDirectory, string fileName, ProjectFileType fileType)
+		protected async Task UploadFileInternal(string fileData, string parentDirectory, string fileName, ProjectFileType fileType, FileParameters parameters)
 		{
 			// Find the wanted directory or create it if it doesn't already exist
 			Directory directory = null;
@@ -260,6 +260,16 @@ namespace Overcrowdin
 					DirectoryId = directory?.Id,
 					Type = fileType
 				};
+				if (parameters is AddFileParameters addParams)
+				{
+					request.ImportOptions = new XmlFileImportOptions
+					{
+						TranslateContent = addParams.TranslateContent,
+						TranslateAttributes = addParams.TranslateAttributes,
+						ContentSegmentation = addParams.ContentSegmentation,
+						TranslatableElements = addParams.TranslatableElements
+					};
+				}
 
 				// appears that both values can't be null, so try using 0 for directory id
 				if (request.BranchId == null && request.DirectoryId == null)

@@ -107,28 +107,14 @@ namespace Overcrowdin
 				var translatableElements = section.GetSection("translatable_elements").GetChildren().Select(te => te.Get<string>()).ToList();
 				if (fileParams is AddFileParameters addFileParams)
 				{
-					//addFileParams.ContentSegmentation = GetIntAsBool(section, "content_segmentation"); // TODO (Hasso) 2020.01: support this whenever Crowdin does
-					if (section.GetValue<int?>("translate_content") != null)
-					{
-						Console.WriteLine("Warning: the option translate_content is no longer supported by overcrowdin!");
-					}
-					if (section.GetValue<int?>("translate_attributes") != null)
-					{
-						Console.WriteLine("Warning: the option translate_attributes is no longer supported by overcrowdin!");
-					}
-					if (section.GetValue<int?>("content_segmentation") != null)
-					{
-						Console.WriteLine("Warning: the option content_segmentation is not yet supported by the crowdin-dotnet-client!");
-					}
+					addFileParams.TranslateContent = GetIntAsBool(section, "translate_content");
+					addFileParams.TranslateAttributes = GetIntAsBool(section, "translate_attributes");
+					addFileParams.ContentSegmentation = GetIntAsBool(section, "content_segmentation");
 					if (section.GetValue<int?>("import_translations") != null)
 					{
 						Console.WriteLine("Warning: the option import_translations is not yet supported by overcrowdin!");
 					}
 					addFileParams.TranslatableElements = translatableElements;
-					if (translatableElements.Any())
-					{
-						Console.WriteLine("Warning: translatable_elements is used only to determine whether to upload a file; the patterns are not passed to Crowdin!");
-					}
 				}
 
 				var matcher = new Matcher();
@@ -151,6 +137,7 @@ namespace Overcrowdin
 				}
 				var matches = matcher.Execute(basePathInfoWrapper);
 				foreach (var sourceFile in matches.Files.Select(match => match.Path)
+					// REVIEW (Hasso) 2025.11: If a file is modified so that it no longer has translatable elements, this filter will leave the old version in Crowdin on Update.
 					.Where(f => ContentFilter.IsLocalizable(fs, f, translatableElements)))
 				{
 					// Key is the relative path with Unix directory separators
@@ -172,10 +159,14 @@ namespace Overcrowdin
 			}
 		}
 
-		public static bool GetIntAsBool(IConfiguration config, string key)
+		public static bool? GetIntAsBool(IConfiguration config, string key)
 		{
 			var val = config.GetValue<int?>(key);
-			return val != null && val != 0;
+			if (val == null)
+			{
+				return null;
+			}
+			return val != 0;
 		}
 
 		// ENHANCE (Hasso) 2020.01: optimize for mostly-full directory structures?
@@ -218,9 +209,9 @@ namespace Overcrowdin
 
 	public class AddFileParameters : FileParameters
 	{
-		public bool TranslateContent;
-		public bool TranslateAttributes;
-		public bool ContentSegmentation;
+		public bool? TranslateContent;
+		public bool? TranslateAttributes;
+		public bool? ContentSegmentation;
 		public List<string> TranslatableElements;
 	}
 

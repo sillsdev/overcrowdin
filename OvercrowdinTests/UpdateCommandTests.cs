@@ -16,8 +16,6 @@ namespace OvercrowdinTests
 {
 	public class UpdateCommandTests : CrowdinApiTestBase
 	{
-		private const int TestProjectId = 44444;
-
 		private void MockPrepareToAddFile(int projectId, string projectName)
 		{
 			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(

@@ -29,11 +29,11 @@ namespace Overcrowdin
 			return await Initialize(settings, fs, apiFactory, factory, (s, f, a, h) => new CrowdInUploadHelper(s, f, a, h));
 		}
 
-		public async Task UploadFile(string fileData, string parentDirectory, string fileName)
+		public async Task UploadFile(string fileData, string parentDirectory, string fileName, FileParameters parameters)
 		{
 			try
 			{
-				await UploadFileInternal(fileData, parentDirectory, fileName, ProjectFileType.Auto);
+				await UploadFileInternal(fileData, parentDirectory, fileName, ProjectFileType.Auto, parameters);
 				FileUploadCount++;
 			}
 			catch (Exception e)
