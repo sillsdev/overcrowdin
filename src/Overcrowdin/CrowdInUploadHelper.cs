@@ -1,7 +1,6 @@
 using System;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
-using Crowdin.Api;
 using Crowdin.Api.SourceFiles;
 
 namespace Overcrowdin
@@ -29,21 +28,22 @@ namespace Overcrowdin
 			return await Initialize(settings, fs, apiFactory, factory, (s, f, a, h) => new CrowdInUploadHelper(s, f, a, h));
 		}
 
-		public async Task UploadFile(string fileData, string parentDirectory, string fileName, FileParameters parameters)
+		public async Task UploadFile(string fileData, string filePath, FileParameters parameters)
 		{
 			try
 			{
-				await UploadFileInternal(fileData, parentDirectory, fileName, ProjectFileType.Auto, parameters);
+				await UploadFileInternal(fileData, filePath, ProjectFileType.Auto, parameters);
 				FileUploadCount++;
 			}
 			catch (Exception e)
 			{
-				Console.Error.WriteLine($"Error uploading file {parentDirectory} / {fileName}:");
+				Console.Error.WriteLine($"Error uploading file {filePath}:");
 				Console.Error.WriteLine("    " + (e.InnerException != null ? e.InnerException.Message : e.Message));
 				FileErrorCount++;
 			}
 		}
 
+		[Obsolete]
 		public async Task<int> CleanupExtraneousFiles()
 		{
 			// Only delete files if there were no errors since errors could cause the list-of-files-to-be-deleted

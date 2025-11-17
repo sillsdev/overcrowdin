@@ -45,8 +45,8 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal(@"john/quincy/adams/test.txt", fileParams.FilesToExportPatterns.Keys.First());
 		}
 
 		[Fact]
@@ -64,10 +64,10 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Equal(2, fileParams.Files.Count);
-			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
-			Assert.Contains(@"C:\john\quincy\adams\test.txt", foundFilesArray);
-			Assert.Contains(@"C:\john\quincy\adams\allonym.txt", foundFilesArray);
+			Assert.Equal(2, fileParams.FilesToExportPatterns.Count);
+			var foundFiles = fileParams.FilesToExportPatterns.Keys;
+			Assert.Contains(@"john/quincy/adams/test.txt", foundFiles);
+			Assert.Contains(@"john/quincy/adams/allonym.txt", foundFiles);
 		}
 
 		[Fact]
@@ -85,12 +85,12 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Equal(6, fileParams.Files.Count);
-			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
-			Assert.Contains(@"C:\john\test.txt", foundFilesArray);
-			Assert.Contains(@"C:\john\doe\test.txt", foundFilesArray);
-			Assert.Contains(@"C:\john\quincy\adams\allonym.txt", foundFilesArray);
-			Assert.DoesNotContain(foundFilesArray, file => file.Contains("jane"));
+			Assert.Equal(6, fileParams.FilesToExportPatterns.Count);
+			var foundFiles = fileParams.FilesToExportPatterns.Keys;
+			Assert.Contains(@"john/test.txt", foundFiles);
+			Assert.Contains(@"john/doe/test.txt", foundFiles);
+			Assert.Contains(@"john/quincy/adams/allonym.txt", foundFiles);
+			Assert.DoesNotContain(foundFiles, file => file.Contains("jane"));
 		}
 
 		[Fact]
@@ -108,10 +108,10 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
-			Assert.Equal(2, fileParams.Files.Count);
-			Assert.Contains(@"C:\john\doe\test.txt", foundFilesArray);
-			Assert.Contains(@"C:\john\quincy\doe\test.txt", foundFilesArray);
+			var foundFiles = fileParams.FilesToExportPatterns.Keys;
+			Assert.Equal(2, fileParams.FilesToExportPatterns.Count);
+			Assert.Contains(@"john/doe/test.txt", foundFiles);
+			Assert.Contains(@"john/quincy/doe/test.txt", foundFiles);
 		}
 
 		[Fact]
@@ -129,11 +129,11 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Equal(3, fileParams.Files.Count);
-			var foundFilesArray = fileParams.Files.Values.Select(val => val.FullName).ToArray();
-			Assert.Contains(@"C:\john\quincy\adams\test.txt", foundFilesArray);
-			Assert.Contains(@"C:\john\quincy\adams\allonym.txt", foundFilesArray);
-			Assert.Contains(@"C:\john\quincy\doe\test.txt", foundFilesArray);
+			Assert.Equal(3, fileParams.FilesToExportPatterns.Count);
+			var foundFiles = fileParams.FilesToExportPatterns.Keys;
+			Assert.Contains(@"john/quincy/adams/test.txt", foundFiles);
+			Assert.Contains(@"john/quincy/adams/allonym.txt", foundFiles);
+			Assert.Contains(@"john/quincy/doe/test.txt", foundFiles);
 		}
 
 		[Theory]
@@ -176,16 +176,14 @@ namespace OvercrowdinTests
 
 			Assert.Equal(2, fileParamsList.Count);
 			var janeFileParams = fileParamsList[0];
-			Assert.Single(janeFileParams.Files);
-			Assert.Single(janeFileParams.ExportPatterns);
-			Assert.Equal(janePattern, janeFileParams.ExportPatterns["jane/doe/test.txt"]);
+			Assert.Single(janeFileParams.FilesToExportPatterns);
+			Assert.Equal(janePattern, janeFileParams.FilesToExportPatterns["jane/doe/test.txt"]);
 
 			var johnFileParams = fileParamsList[1];
-			Assert.Equal(4, johnFileParams.Files.Count);
-			Assert.Equal(4, johnFileParams.ExportPatterns.Count);
-			foreach (var key in johnFileParams.Files.Keys)
+			Assert.Equal(4, johnFileParams.FilesToExportPatterns.Count);
+			foreach (var key in johnFileParams.FilesToExportPatterns.Keys)
 			{
-				Assert.Equal(johnPattern, johnFileParams.ExportPatterns[key]);
+				Assert.Equal(johnPattern, johnFileParams.FilesToExportPatterns[key]);
 			}
 		}
 
@@ -206,7 +204,7 @@ namespace OvercrowdinTests
 			}
 
 			Assert.Single(fileParamsList);
-			var files = fileParamsList[0].Files.Keys;
+			var files = fileParamsList[0].FilesToExportPatterns.Keys;
 			Assert.Equal(3, files.Count);
 			Assert.Contains("test.txt", files);
 			Assert.Contains("john/test.txt", files);
@@ -234,7 +232,7 @@ namespace OvercrowdinTests
 			}
 
 			Assert.Single(fileParamsList);
-			var files = fileParamsList[0].Files.Keys;
+			var files = fileParamsList[0].FilesToExportPatterns.Keys;
 			Assert.Single(files);
 			Assert.Contains("test.txt", files);
 
@@ -258,7 +256,7 @@ namespace OvercrowdinTests
 			}
 
 			Assert.Single(fileParamsList);
-			var files = fileParamsList[0].Files.Keys;
+			var files = fileParamsList[0].FilesToExportPatterns.Keys;
 			Assert.Single(files);
 			Assert.Contains("john/quincy/adams/allonym.txt", files);
 		}
@@ -316,7 +314,7 @@ namespace OvercrowdinTests
 
 			Assert.Equal(3, fileParamsList.Count);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
+			Assert.Single(fileParams.FilesToExportPatterns);
 			Assert.False(fileParams.TranslateContent);
 			Assert.False(fileParams.TranslateAttributes);
 			Assert.False(fileParams.ContentSegmentation);
@@ -324,7 +322,7 @@ namespace OvercrowdinTests
 			Assert.Single(te);
 			Assert.Contains(trElt0, te);
 			fileParams = fileParamsList[1];
-			Assert.Single(fileParams.Files);
+			Assert.Single(fileParams.FilesToExportPatterns);
 			Assert.True(fileParams.TranslateContent);
 			Assert.True(fileParams.TranslateAttributes);
 			Assert.True(fileParams.ContentSegmentation);
@@ -333,7 +331,7 @@ namespace OvercrowdinTests
 			Assert.Contains(trElt1a, te);
 			Assert.Contains(trElt1b, te);
 			fileParams = fileParamsList[2];
-			Assert.Single(fileParams.Files);
+			Assert.Single(fileParams.FilesToExportPatterns);
 			Assert.Null(fileParams.TranslateContent);
 			Assert.Null(fileParams.TranslateAttributes);
 			Assert.Null(fileParams.ContentSegmentation);
@@ -361,9 +359,8 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(@"C:\jane\doe\test.txt", fileParams.Files.Values.First().FullName);
-			Assert.Equal(subPath, fileParams.Files.Keys.First());
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal(subPath, fileParams.FilesToExportPatterns.Keys.First());
 		}
 
 		[Fact]
@@ -382,9 +379,8 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
-			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal("adams/test.txt", fileParams.FilesToExportPatterns.Keys.First());
 		}
 
 		[Theory]
@@ -405,9 +401,8 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(@"C:\john\quincy\adams\test.txt", fileParams.Files.Values.First().FullName);
-			Assert.Equal("adams/test.txt", fileParams.Files.Keys.First());
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal("adams/test.txt", fileParams.FilesToExportPatterns.Keys.First());
 		}
 
 		[Fact]
@@ -433,12 +428,12 @@ namespace OvercrowdinTests
 		[Fact]
 		public void BatchEmptyFilesListDoesntCrash()
 		{
-			var fileParams = new AddFileParameters { Files = new Dictionary<string, FileInfo>() };
+			var fileParams = new AddFileParameters { FilesToExportPatterns = new Dictionary<string, string>() };
 
 			var result = CommandUtilities.BatchFiles(fileParams);
 
 			Assert.Single(result);
-			Assert.Empty(result.First().Files);
+			Assert.Empty(result.First().FilesToExportPatterns);
 		}
 
 		[Fact]
@@ -460,8 +455,8 @@ namespace OvercrowdinTests
 
 			Assert.Single(fileParamsList);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(localizableFileName, fileParams.Files.Keys.First());
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal(localizableFileName, fileParams.FilesToExportPatterns.Keys.First());
 		}
 
 		[Theory]
@@ -503,11 +498,11 @@ namespace OvercrowdinTests
 
 			Assert.Equal(2, fileParamsList.Count);
 			var fileParams = fileParamsList[0];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(fileNameNotFiltered, fileParams.Files.Keys.First());
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal(fileNameNotFiltered, fileParams.FilesToExportPatterns.Keys.First());
 			fileParams = fileParamsList[1];
-			Assert.Single(fileParams.Files);
-			Assert.Equal(fileNamePassesFilter, fileParams.Files.Keys.First());
+			Assert.Single(fileParams.FilesToExportPatterns);
+			Assert.Equal(fileNamePassesFilter, fileParams.FilesToExportPatterns.Keys.First());
 		}
 	}
 }

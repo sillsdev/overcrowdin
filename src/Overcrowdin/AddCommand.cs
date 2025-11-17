@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,14 +41,14 @@ namespace Overcrowdin
 
 			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fs, apiFactory);
 			// Add files to Crowdin
-			Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.Files.Count)} files...");
+			Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.FilesToExportPatterns.Count)} files...");
 			var i = 0;
 			do
 			{
 				var addFileParams = addFileParamsList[i];
-				foreach (var file in addFileParams.Files)
+				foreach (var file in addFileParams.FilesToExportPatterns.Keys)
 				{
-					await uploadHelper.UploadFile(fs.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name, addFileParams);
+					await uploadHelper.UploadFile(fs.File.ReadAllText(file), file, addFileParams);
 				}
 			} while (++i < addFileParamsList.Count);
 
@@ -67,7 +66,7 @@ namespace Overcrowdin
 				Console.WriteLine("Failure adding files.");
 				// Crowdin adds all files before the problem file. There is no rollback.
 				// Alert the user to the potential state of the project in Crowdin.
-				if (i > 1 || addFileParamsList[0].Files.Count > 1)
+				if (i > 1 || addFileParamsList[0].FilesToExportPatterns.Count > 1)
 				{
 					Console.WriteLine("Some files may have been added.");
 				}
