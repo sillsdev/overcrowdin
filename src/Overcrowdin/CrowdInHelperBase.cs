@@ -258,9 +258,7 @@ namespace Overcrowdin
 					StorageId = storage.Id,
 					BranchId = _branchId,
 					DirectoryId = directory?.Id,
-					Type = fileType,
-					
-					//ExportOptions = new GeneralFileExportOptions { ExportPattern = null }
+					Type = fileType
 				};
 				if (parameters is AddFileParameters addParams)
 				{
