@@ -155,8 +155,10 @@ namespace OvercrowdinTests
 			const int projectId = 75309;
 			const string fileName0 = "testA.xml";
 			const string fileName1 = "testB.xml";
+			const string fileName2 = "testC.xml";
 			const string fileContents0 = "<string txt='something'/>";
 			const string fileContents1 = "<cheese><wheel>swiss</wheel></cheese>";
+			const string fileContents2 = "<what>ever</what>";
 			const string trElt0 = "//string[@txt]";
 			const string trElt1A = "/cheese/wheel";
 			const string trElt1B = "/round[@round]";
@@ -172,6 +174,8 @@ namespace OvercrowdinTests
 			files[1].translate_attributes = 1;
 			files[1].content_segmentation = 1;
 			files[1].translatable_elements = new JArray { trElt1A, trElt1B };
+			files.Add(new JObject());
+			files[2].source = fileName2;
 			Environment.SetEnvironmentVariable(TestApiKeyEnv, "key-exists");
 			MockPrepareToAddFile(projectId, TestProjectName);
 			MockAddFile(mockFileSystem, projectId, fileName0, fileContents0).WithPartialContent($"\"translatableElements\":[\"{trElt0}\"]")
@@ -182,6 +186,7 @@ namespace OvercrowdinTests
 				.WithPartialContent($"\"translateContent\":true")
 				.WithPartialContent($"\"translateAttributes\":true")
 				.WithPartialContent($"\"contentSegmentation\":true");
+			MockAddFile(mockFileSystem, projectId, fileName2, fileContents2);
 			// SUT
 			using var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString()));
 			var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
