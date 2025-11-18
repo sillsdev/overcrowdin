@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading.Tasks;
@@ -39,14 +38,14 @@ namespace Overcrowdin
 			}
 			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fileSystem, apiFactory);
 
-			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.Files.Count)} files...");
+			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.FilesToExportPatterns.Count)} files...");
 			var i = 0;
 			do
 			{
 				var updateFileParameters = updateFileParametersList[i];
-				foreach (var file in updateFileParameters.Files)
+				foreach (var file in updateFileParameters.FilesToExportPatterns.Keys)
 				{
-					await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file.Key), Path.GetDirectoryName(file.Key), file.Value.Name, updateFileParameters);
+					await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file), file, updateFileParameters);
 				}
 			} while (++i < updateFileParametersList.Count);
 
@@ -62,13 +61,13 @@ namespace Overcrowdin
 			else
 			{
 				Console.WriteLine("A failure occurred while updating the following:\n");
-				foreach (var f in updateFileParametersList[i - 1].Files)
+				foreach (var f in updateFileParametersList[i - 1].FilesToExportPatterns)
 				{
-					Console.WriteLine("  " + f.Value.FullName);
+					Console.WriteLine("  " + f.Key);
 				}
 
 				// A problem file does not cause Crowdin to roll back a batch. Alert the user if some files may have been updated.
-				if (i > 1 || updateFileParametersList[0].Files.Count > 1)
+				if (i > 1 || updateFileParametersList[0].FilesToExportPatterns.Count > 1)
 				{
 					Console.WriteLine("Some files may have been updated.");
 				}

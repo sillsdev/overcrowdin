@@ -30,7 +30,7 @@ namespace Overcrowdin
 		private readonly string _branch;
 
 		protected Project _project;
-		protected long? _branchId;
+		protected long _branchId;
 
 		protected List<TranslationProjectBuild> _existingTranslationBuilds;
 		protected List<FileInfoCollectionResource> _existingFiles;
@@ -103,7 +103,7 @@ namespace Overcrowdin
 			// check to see if branch is needed
 			if (_branch.Equals("none", StringComparison.OrdinalIgnoreCase))
 			{
-				_branchId = null;
+				_branchId = 0;
 				return true;
 			}
 
@@ -166,7 +166,7 @@ namespace Overcrowdin
 		{
 			// Cheack to see if an existing build has already been created for the languages that are ready
 			long? buildId = _existingTranslationBuilds.Find(tb =>
-				tb.FinishedAt > buildCutoffTime && (_branchId == null || tb.Attributes.BranchId == _branchId) &&
+				tb.FinishedAt > buildCutoffTime && (_branchId == 0 || tb.Attributes.BranchId == _branchId) &&
 				tb.Attributes.TargetLanguageIds.All(id => readyLanguages.Contains(id)))?.Id;
 
 			if (buildId == null)
@@ -195,12 +195,13 @@ namespace Overcrowdin
 			return true;
 		}
 
-		protected async Task UploadFileInternal(string fileData, string parentDirectory, string fileName, ProjectFileType fileType, FileParameters parameters)
+		protected async Task UploadFileInternal(string fileData, string filePath, ProjectFileType fileType, FileParameters parameters)
 		{
 			// Find the wanted directory or create it if it doesn't already exist
 			Directory directory = null;
 			// split on the path separator so we can create all the necessary parent folders
-			var dirs = parentDirectory.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+			// ReSharper disable once PossibleNullReferenceException
+			var dirs = Path.GetDirectoryName(filePath).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 			var parentDir = 0L;
 			foreach (var dir in dirs)
 			{
@@ -211,7 +212,8 @@ namespace Overcrowdin
 					var request = new AddDirectoryRequest
 					{
 						Name = dir,
-						//ExportPattern = "TODO" (Hasso) 2025.11
+						// Redundant to the File ExportPattern, but this may make it easier to upload a single new file through the web interface.
+						ExportPattern = parameters.FilesToExportPatterns[filePath]
 					};
 					if (parentDir != 0)
 					{
@@ -228,12 +230,13 @@ namespace Overcrowdin
 			}
 
 			// Create new storage for the file and upload it.
+			var fileName = Path.GetFileName(filePath);
 			StorageResource storage;
 			using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(fileData), false))
 				storage = await _client.Storage.AddStorage(stream, fileName);
 
 			var directoryId = directory?.Id ?? 0; // Files can't have a null directory or branch IDs for some reason
-			var branchSearchId = _branchId ?? 0;
+			var branchSearchId = _branchId;
 			var existingFile = _existingFiles.Find(f =>
 				f.BranchId == branchSearchId && f.DirectoryId == directoryId && string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
 			if (existingFile != null)
@@ -258,7 +261,8 @@ namespace Overcrowdin
 					StorageId = storage.Id,
 					BranchId = _branchId,
 					DirectoryId = directory?.Id,
-					Type = fileType
+					Type = fileType,
+					ExportOptions = new GeneralFileExportOptions { ExportPattern = parameters.FilesToExportPatterns[filePath] }
 				};
 				if (parameters is AddFileParameters addParams)
 				{

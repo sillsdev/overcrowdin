@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
-using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -16,60 +13,6 @@ namespace OvercrowdinTests
 {
 	public class AddCommandTests : CrowdinApiTestBase
 	{
-
-		private void MockPrepareToAddFile(int projectId, string projectName)
-		{
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
-			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/files?limit=500&offset=0&recursion=1").Respond(
-				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
-			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
-				"application/json", $"{{'data':[]}}");
-		}
-
-		/// <returns>The MockedRequest expectation to add the file to the project</returns>
-		private MockedRequest MockAddFile(MockFileSystem mockFileSystem, int projectId, string inputFileName, string fileContent = "irrelevant")
-		{
-			mockFileSystem.AddFile(inputFileName, new MockFileData(fileContent));
-			_mockHttpClient.Expect(HttpMethod.Post, "https://api.crowdin.com/api/v2/storages")
-				.WithHeaders("Crowdin-API-FileName", $"{Path.GetFileName(inputFileName)}").Respond("application/json", "{}");
-			var addFileRequest = _mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/files").Respond("application/json", "{}");
-			_mockHttpClient.Expect(HttpMethod.Delete, "https://api.crowdin.com/api/v2/storages/0").Respond(HttpStatusCode.NoContent, "application/json", "{}");
-			return addFileRequest;
-		}
-
-		private void MockPrepareToAddFilesWithBranch(bool makeBranch, int projectId, string projectName, string branch)
-		{
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
-			if (makeBranch)
-			{
-				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=25&offset=0").Respond(
-					"application/json", $"{{'data':[]}}");
-			}
-
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
-			if (makeBranch)
-			{
-				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=500&offset=0").Respond(
-					"application/json", $"{{'data':[]}}");
-				_mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/branches")
-					.WithPartialContent($"\"name\":\"{branch}\"").Respond("application/json", "{}");
-			}
-
-			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/files?limit=500&offset=0&recursion=1").Respond(
-				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
-			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
-				"application/json", $"{{'data':[]}}");
-		}
-
 		[Fact]
 		public async Task AddCommandWithCommandLine()
 		{
@@ -144,12 +87,11 @@ namespace OvercrowdinTests
 			Assert.Equal(0, result);
 		}
 
-
 		/// <summary>
 		/// Integration test that two XML files in the same folder can have distinct XML options.
 		/// </summary>
 		[Fact]
-		public async Task AddCommandWithConfigFileWithXMLOptions()
+		public async Task AddCommandWithConfigFileWithXmlOptions()
 		{
 			var mockFileSystem = new MockFileSystem();
 			const int projectId = 75309;
@@ -195,6 +137,36 @@ namespace OvercrowdinTests
 			Assert.Equal(0, result);
 		}
 
+		/// <summary>
+		/// Integration test that two files in the same folder can have distinct translation export locations
+		/// </summary>
+		[Fact]
+		public async Task AddCommandWithConfigFileWithExportOptions()
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string fileName0 = "dir/strings-en.ext";
+			const string fileName1 = "dir/otherStrings.ext";
+			const string translationLoc0 = "/%locale%/strings-%locale%.xml";
+			const string translationLoc1 = "/%locale%/%original_path%/%file_name%.%locale%.%file_extension%";
+			dynamic configJson = SetUpConfig(fileName0);
+			var files = configJson.files;
+			files[0].translation = translationLoc0;
+			files.Add(new JObject());
+			files[1].source = fileName1;
+			files[1].translation = translationLoc1;
+			Environment.SetEnvironmentVariable(TestApiKeyEnv, "key-exists");
+			MockPrepareToAddFile(TestProjectId, TestProjectName);
+			// Only the first translation location gets associated with the directory, since the files are both in the same directory. Each gets associated with its file.
+			ExpectDirectory(TestProjectId, "dir", 2).WithPartialContent($"\"exportPattern\":\"{translationLoc0}\"");
+			MockAddFile(mockFileSystem, TestProjectId, fileName0).WithPartialContent($"\"exportOptions\":{{\"exportPattern\":\"{translationLoc0}\"}}");
+			MockAddFile(mockFileSystem, TestProjectId, fileName1).WithPartialContent($"\"exportOptions\":{{\"exportPattern\":\"{translationLoc1}\"}}");
+			// SUT
+			using var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString()));
+			var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+			var result = await AddCommand.AddFilesToCrowdin(configurationBuilder, new AddCommand.Options(), mockFileSystem, MockApiFactory);
+			_mockHttpClient.VerifyNoOutstandingExpectation();
+			Assert.Equal(0, result);
+		}
 
 		[Theory]
 		[InlineData(true)]
@@ -223,52 +195,34 @@ namespace OvercrowdinTests
 			Assert.Equal(0, result);
 		}
 
-		[Fact]
-		public async Task AddCommandCreatesFolderStructure()
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public async Task AddCommandCreatesFolderStructure(bool makeBranch)
 		{
 			var mockFileSystem = new MockFileSystem();
 			const string inputFileName1 = "Src/Common/Program/Properties/Resources.resx";
 			const string inputFileName2 = "Src/Common/Library/Properties/Resources.resx";
-			const string projectName = "testcrowdinproject";
-			const int projectId = 369681;
-			const string branch = "branchName";
-			const string apiKeyEnvVar = "KEYEXISTS";
-			Environment.SetEnvironmentVariable(apiKeyEnvVar, "fakecrowdinapikey");
-			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			_mockConfig.Setup(config => config["project_identifier"]).Returns(projectName);
+			var branch = makeBranch ? "branchName" : null;
+			Environment.SetEnvironmentVariable(TestApiKeyEnv, "fakecrowdinapikey");
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(TestApiKeyEnv);
+			_mockConfig.Setup(config => config["project_identifier"]).Returns(TestProjectName);
 			_mockConfig.Setup(config => config["branch"]).Returns(branch);
-			MockPrepareToAddFilesWithBranch(true, projectId, projectName, branch);
-			ExpectDirectory(projectId, "Src", 1);
-			ExpectDirectory(projectId, "Common", 2, 1);
-			ExpectDirectory(projectId, "Program", 3, 2);
-			ExpectDirectory(projectId, "Properties", 4, 3);
-			MockAddFile(mockFileSystem, projectId, inputFileName1);
-			ExpectDirectory(projectId, "Library", 5, 2);
-			ExpectDirectory(projectId, "Properties", 6, 5);
-			MockAddFile(mockFileSystem, projectId, inputFileName2);
+			MockPrepareToAddFilesWithBranch(makeBranch, TestProjectId, TestProjectName, branch);
+			ExpectDirectory(TestProjectId, "Src", 1);
+			ExpectDirectory(TestProjectId, "Common", 2, 1);
+			ExpectDirectory(TestProjectId, "Program", 3, 2);
+			ExpectDirectory(TestProjectId, "Properties", 4, 3);
+			MockAddFile(mockFileSystem, TestProjectId, inputFileName1);
+			ExpectDirectory(TestProjectId, "Library", 5, 2);
+			ExpectDirectory(TestProjectId, "Properties", 6, 5);
+			MockAddFile(mockFileSystem, TestProjectId, inputFileName2);
 			//// SUT
 			var result = await AddCommand.AddFilesToCrowdin(_mockConfig.Object,
 				new AddCommand.Options { Files = new[] { inputFileName1, inputFileName2 } },
 				mockFileSystem, MockApiFactory);
 			_mockHttpClient.VerifyNoOutstandingExpectation();
 			Assert.Equal(0, result);
-		}
-
-		private MockedRequest ExpectDirectory(int projectId, string name, int? id = null, int? parent = null)
-		{
-			var request = _mockHttpClient.Expect(HttpMethod.Post, $"https://api.crowdin.com/api/v2/projects/{projectId}/directories")
-				.WithPartialContent($"\"name\":\"{name}\"");
-			if(parent != null)
-			{
-				request.WithPartialContent($"\"directoryId\":{parent}");
-			}
-			return request.Respond("application/json", $$$"""
-				{"data": {
-					"name": "{{{name}}}",
-					"id": {{{id?.ToString() ?? "null"}}},
-					"directoryId": {{{parent?.ToString() ?? "null"}}},
-				}}
-				""");
 		}
 
 		[Theory]

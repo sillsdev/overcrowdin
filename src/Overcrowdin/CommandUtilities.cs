@@ -43,11 +43,11 @@ namespace Overcrowdin
 			{
 				var fileParams = new T
 				{
-					Files = new Dictionary<string, FileInfo>()
+					FilesToExportPatterns = new Dictionary<string, string>()
 				};
 				foreach (var file in opts.Files)
 				{
-					fileParams.Files[file.Replace(Path.DirectorySeparatorChar, '/')] = new FileInfo(file); // TODO (Hasso) 2019.12: normalize keys: no C:\
+					fileParams.FilesToExportPatterns[file.Replace(Path.DirectorySeparatorChar, '/')] = null; // TODO (Hasso) 2019.12: normalize keys: no C:\
 					var dir = GetNormalizedParentFolder(file);
 					if (!string.IsNullOrEmpty(dir))
 					{
@@ -101,8 +101,7 @@ namespace Overcrowdin
 				var fileParams = new T
 				{
 					// REVIEW (Hasso) 2020.09: should we allow a branch from Opts when getting files from the config file?
-					Files = new Dictionary<string, FileInfo>(),
-					ExportPatterns = new Dictionary<string, string>()
+					FilesToExportPatterns = new Dictionary<string, string>()
 				};
 				var translatableElements = section.GetSection("translatable_elements").GetChildren().Select(te => te.Get<string>()).ToList();
 				if (fileParams is AddFileParameters addFileParams)
@@ -142,9 +141,7 @@ namespace Overcrowdin
 				{
 					// Key is the relative path with Unix directory separators
 					var key = sourceFile.Replace(Path.DirectorySeparatorChar, '/');
-					var path = Path.Combine(basePath, sourceFile).Replace(Path.DirectorySeparatorChar, '/');
-					fileParams.Files[key] = new FileInfo(path);
-					fileParams.ExportPatterns[key] = translation;
+					fileParams.FilesToExportPatterns[key] = translation;
 
 					var dir = GetNormalizedParentFolder(key);
 					if (!string.IsNullOrEmpty(dir))
@@ -152,7 +149,7 @@ namespace Overcrowdin
 						folders.Add(dir);
 					}
 				}
-				if (fileParams.Files.Any())
+				if (fileParams.FilesToExportPatterns.Any())
 				{
 					fileParamsList.AddRange(BatchFiles(fileParams));
 				}
@@ -203,8 +200,11 @@ namespace Overcrowdin
 
 	public class FileParameters
 	{
-		public Dictionary<string, FileInfo> Files;
-		public Dictionary<string, string> ExportPatterns;
+		/// <summary>
+		/// Keys are the paths to each file relative to the base_path defined in crowdin.json
+		/// Values are ExportPatterns (translation in crowdin.json)
+		/// </summary>
+		public Dictionary<string, string> FilesToExportPatterns;
 	}
 
 	public class AddFileParameters : FileParameters
@@ -215,6 +215,7 @@ namespace Overcrowdin
 		public List<string> TranslatableElements;
 	}
 
+	[Obsolete]
 	public interface ICrowdinCredentials
 	{
 		string AccessToken { get; }
