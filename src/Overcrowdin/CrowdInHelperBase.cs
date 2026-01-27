@@ -30,7 +30,7 @@ namespace Overcrowdin
 		private readonly string _branch;
 
 		protected Project _project;
-		protected long _branchId;
+		protected long? _branchId;
 
 		protected List<TranslationProjectBuild> _existingTranslationBuilds;
 		protected List<FileInfoCollectionResource> _existingFiles;
@@ -103,7 +103,7 @@ namespace Overcrowdin
 			// check to see if branch is needed
 			if (_branch.Equals("none", StringComparison.OrdinalIgnoreCase))
 			{
-				_branchId = 0;
+				_branchId = null;
 				return true;
 			}
 
