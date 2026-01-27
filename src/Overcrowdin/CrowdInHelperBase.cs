@@ -30,7 +30,7 @@ namespace Overcrowdin
 		private readonly string _branch;
 
 		protected Project _project;
-		protected long _branchId;
+		protected long? _branchId;
 
 		protected List<TranslationProjectBuild> _existingTranslationBuilds;
 		protected List<FileInfoCollectionResource> _existingFiles;
@@ -103,7 +103,7 @@ namespace Overcrowdin
 			// check to see if branch is needed
 			if (_branch.Equals("none", StringComparison.OrdinalIgnoreCase))
 			{
-				_branchId = 0;
+				_branchId = null;
 				return true;
 			}
 
@@ -164,9 +164,9 @@ namespace Overcrowdin
 
 		protected async Task<bool> BuildAndDownload(string outputPath, List<string> readyLanguages, bool skipUntranslated, DateTimeOffset buildCutoffTime)
 		{
-			// Cheack to see if an existing build has already been created for the languages that are ready
+			// Check to see if an existing build has already been created for the languages that are ready
 			long? buildId = _existingTranslationBuilds.Find(tb =>
-				tb.FinishedAt > buildCutoffTime && (_branchId == 0 || tb.Attributes.BranchId == _branchId) &&
+				tb.FinishedAt > buildCutoffTime && (_branchId == null || tb.Attributes.BranchId == _branchId) &&
 				tb.Attributes.TargetLanguageIds.All(id => readyLanguages.Contains(id)))?.Id;
 
 			if (buildId == null)
@@ -203,10 +203,11 @@ namespace Overcrowdin
 			// ReSharper disable once PossibleNullReferenceException
 			var dirs = Path.GetDirectoryName(filePath).Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
 			var parentDir = 0L;
+			var branchSearchId = _branchId ?? 0; // Files can't have a null directory or branch ID for some reason
 			foreach (var dir in dirs)
 			{
 				directory = _existingDirectories.Find(d =>
-					d.BranchId == _branchId && d.DirectoryId == parentDir && string.Equals(d.Name, dir, StringComparison.OrdinalIgnoreCase));
+					d.BranchId == branchSearchId && d.DirectoryId == parentDir && string.Equals(d.Name, dir, StringComparison.OrdinalIgnoreCase));
 				if (directory == null)
 				{
 					var request = new AddDirectoryRequest
@@ -235,10 +236,9 @@ namespace Overcrowdin
 			using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(fileData), false))
 				storage = await _client.Storage.AddStorage(stream, fileName);
 
-			var directoryId = directory?.Id ?? 0; // Files can't have a null directory or branch IDs for some reason
-			var branchSearchId = _branchId;
+			var directorySearchId = directory?.Id ?? 0; // Files and directories can't have a null branch ID for some reason
 			var existingFile = _existingFiles.Find(f =>
-				f.BranchId == branchSearchId && f.DirectoryId == directoryId && string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
+				f.BranchId == branchSearchId && f.DirectoryId == directorySearchId && string.Equals(f.Name, fileName, StringComparison.OrdinalIgnoreCase));
 			if (existingFile != null)
 			{
 				// File already exists so move it from storage onto the existing file, updating it
