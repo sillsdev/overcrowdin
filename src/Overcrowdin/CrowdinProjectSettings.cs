@@ -11,6 +11,7 @@ namespace Overcrowdin
 		public readonly string AccessToken;
 		public readonly string Project;
 		public readonly string Branch;
+		// REVIEW (Hasso) 2026.01: these IDs are never used.
 		public long ProjectId;
 		public long BranchId;
 
