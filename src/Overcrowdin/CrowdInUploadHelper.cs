@@ -56,13 +56,11 @@ namespace Overcrowdin
 		#endregion
 
 		#region Overrides of CrowdInHelper
-		protected override async Task<bool> InitializeInternal()
+		protected override async Task InitializeInternal()
 		{
-			bool result = await base.InitializeInternal();
-			if (!result)
-				return false;
+			await base.InitializeInternal();
 
-			return await PrepareForUploads();
+			await PrepareForUploads();
 		}
 		#endregion
 

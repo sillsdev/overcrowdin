@@ -73,16 +73,13 @@ namespace Overcrowdin
 
 			Console.WriteLine("Initializing CrowdIn...");
 
-			var initialized = await crowdIn.InitializeInternal();
-
-			if (!initialized)
-				return null;
+			await crowdIn.InitializeInternal();
 
 			Console.WriteLine("CrowdIn initialization complete");
 			return crowdIn;
 		}
 
-		protected virtual async Task<bool> InitializeInternal()
+		protected virtual async Task InitializeInternal()
 		{
 			Console.WriteLine("    Checking project...");
 			List<Project> projects = await GetFullList((offset, count) => _client.ProjectsGroups.ListProjects<Project>(limit: count, offset: offset));
@@ -96,15 +93,14 @@ namespace Overcrowdin
 
 			if (_project == null)
 			{
-				Console.Error.WriteLine($"Project matching '{_projectStr}' could not be found. Check to make sure the user that generated the access token has access to the project.");
-				return false;
+				throw new Exception($"Project matching '{_projectStr}' could not be found. Check to make sure the user that generated the access token has access to the project.");
 			}
 
 			// check to see if branch is needed
 			if (_branch.Equals("none", StringComparison.OrdinalIgnoreCase))
 			{
 				_branchId = null;
-				return true;
+				return;
 			}
 
 			Console.WriteLine("    Checking branch...");
@@ -119,13 +115,10 @@ namespace Overcrowdin
 				Console.WriteLine($"Branch matching '{_branch}' could not be found in the project {_projectStr}, adding it.");
 				var addedBranch = await _branchExecutor.AddBranch(_project.Id, new AddBranchRequest { Name = _branch });
 				_branchId = addedBranch.Id;
-				return true;
 			}
-
-			return true;
 		}
 
-		protected async Task<bool> PrepareForUploads()
+		protected async Task PrepareForUploads()
 		{
 			Console.WriteLine("    Loading existing file list...");
 			_existingFiles = await GetFullList((offset, count) => _fileExecutor.ListFiles<FileInfoCollectionResource>(_project.Id, count, offset, _branchId, recursion: 1));
@@ -139,8 +132,6 @@ namespace Overcrowdin
 			List<StorageResource> existingStorages = await GetFullList((offset, count) => _client.Storage.ListStorages(count, offset));
 			foreach (StorageResource s in existingStorages)
 				await _client.Storage.DeleteStorage(s.Id);
-
-			return true;
 		}
 
 		/// <summary>

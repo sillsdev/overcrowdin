@@ -15,17 +15,13 @@ namespace Overcrowdin
 			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
 			public string Branch { get; set; }
 
-			[Obsolete] // REVIEW (Hasso) 2025.11: this has been unused for some time
-			[Option('l', Required = false, Default = "all", HelpText = "Ignored.")]
-			public string Language { get; set; }
-
 			[Option('f', Required = true, HelpText = "Path and filename relative to the configured base path for the zip file.")]
 			public string Filename { get; set; }
 		}
 
 		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null)
 		{
-			var credentials = await CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
 			if (credentials == null)
 			{
 				return 1;
