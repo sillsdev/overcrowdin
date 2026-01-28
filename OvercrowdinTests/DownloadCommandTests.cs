@@ -14,13 +14,6 @@ namespace OvercrowdinTests
 
 		private void MockPrepareToDownload(int projectId, string projectName, bool useBranch, string branch)
 		{
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}','targetLanguages':[{{'id':'fr','name':'French'}}]}}}}]}}");
-			if (useBranch)
-			{
-				_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/branches?limit=25&offset=0").Respond(
-					"application/json", $"{{'data':[{{'name':'{branch}', 'id':1}}]}}");
-			}
 			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
 				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}','targetLanguages':[{{'id':'fr','name':'French'}}]}}}}]}}");
 			if (useBranch)
@@ -71,8 +64,8 @@ namespace OvercrowdinTests
 
 			_mockHttpClient.Expect("https://fakeurl.com").Respond("application/octet-stream", "junk");
 			var result = await DownloadCommand.DownloadFromCrowdin(_mockConfig.Object, new DownloadCommand.Options { Filename = outputFileName }, mockFileSystem.FileSystem, MockApiFactory, new MockHttpClientFactory(_mockHttpClient));
-			Assert.Equal(0, result);
 			_mockHttpClient.VerifyNoOutstandingExpectation();
+			Assert.Equal(0, result);
 		}
 
 		[Theory]

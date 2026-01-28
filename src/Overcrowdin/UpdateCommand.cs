@@ -31,7 +31,7 @@ namespace Overcrowdin
 				Console.WriteLine("No files to add.");
 				return 0;
 			}
-			var credentials = await CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
 			if (credentials == null)
 			{
 				return 1;

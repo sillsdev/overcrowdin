@@ -39,16 +39,12 @@ namespace Overcrowdin
 		#endregion
 
 		#region Overrides of CrowdInHelper
-		protected override async Task<bool> InitializeInternal()
+		protected override async Task InitializeInternal()
 		{
-			bool result = await base.InitializeInternal();
-			if (!result)
-				return false;
+			await base.InitializeInternal();
 
 			Console.WriteLine("    Loading existing translation builds...");
 			_existingTranslationBuilds = await GetFullList((offset, count) => _client.Translations.ListProjectBuilds(_project.Id, _branchId, count, offset));
-
-			return true;
 		}
 		#endregion
 
