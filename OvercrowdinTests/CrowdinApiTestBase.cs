@@ -108,7 +108,7 @@ namespace OvercrowdinTests
 				"application/json", $"{{'data':[{{'data': {{'id': {projectId},'identifier': '{projectName}'}}}}]}}");
 			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/files?limit=500&offset=0&recursion=1").Respond(
 				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
-			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0").Respond(
+			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0&recursion=1").Respond(
 				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
 			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
 				"application/json", $"{{'data':[]}}");
@@ -147,7 +147,7 @@ namespace OvercrowdinTests
 
 			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/files?limit=500&offset=0&recursion=1").Respond(
 				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
-			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0").Respond(
+			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{projectId}/directories?limit=500&offset=0&recursion=1").Respond(
 				"application/json", $"{{'data':[{{'data': {{}}}}]}}");
 			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/storages?limit=500&offset=0").Respond(
 				"application/json", $"{{'data':[]}}");

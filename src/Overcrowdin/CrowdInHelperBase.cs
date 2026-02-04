@@ -131,7 +131,7 @@ namespace Overcrowdin
 			_existingFiles = await GetFullList((offset, count) => _fileExecutor.ListFiles<FileInfoCollectionResource>(_project.Id, count, offset, _branchId, recursion: 1));
 
 			Console.WriteLine("    Loading existing directory list...");
-			_existingDirectories = await GetFullList((offset, count) => _fileExecutor.ListDirectories(_project.Id, count, offset, _branchId));
+			_existingDirectories = await GetFullList((offset, count) => _fileExecutor.ListDirectories(_project.Id, count, offset, _branchId, recursion: 1));
 
 			// Clean up any storage that was being used previously.
 			// This should be rare since we delete the storage after successfully uploading a file.
