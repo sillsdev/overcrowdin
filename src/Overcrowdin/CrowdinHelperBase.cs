@@ -32,6 +32,8 @@ namespace Overcrowdin
 		protected Project _project;
 		protected long? _branchId;
 
+		protected abstract bool CreateBranchIfNeeded { get; }
+
 		protected List<TranslationProjectBuild> _existingTranslationBuilds;
 		protected List<FileInfoCollectionResource> _existingFiles;
 		protected List<Directory> _existingDirectories;
@@ -105,13 +107,17 @@ namespace Overcrowdin
 
 			Console.WriteLine("    Checking branch...");
 			List<Branch> branches = await GetFullList((offset, count) => _branchExecutor.ListBranches(_project.Id, null, count, offset));
-			if (int.TryParse(_branch, out var branchNbr))
+			if (int.TryParse(_branch, out var branchNbr) && branches.Exists(p => p.Id == branchNbr))
 				_branchId = branchNbr;
 			else
-				_branchId = branches.Find(p => p.Name.Equals(_branch, StringComparison.OrdinalIgnoreCase))?.Id ?? -1;
+				_branchId = branches.Find(p => p.Name.Equals(_branch, StringComparison.OrdinalIgnoreCase))?.Id;
 
-			if (!branches.Exists(p => p.Id == _branchId))
+			if (_branchId == null)
 			{
+				if (!CreateBranchIfNeeded)
+				{
+					throw new Exception($"Branch matching '{_branch}' could not be found in the project {_projectStr}. Branches: {string.Join(", ", branches.Select(b => b.Name))}");
+				}
 				Console.WriteLine($"Branch matching '{_branch}' could not be found in the project {_projectStr}, adding it.");
 				var addedBranch = await _branchExecutor.AddBranch(_project.Id, new AddBranchRequest { Name = _branch });
 				_branchId = addedBranch.Id;
