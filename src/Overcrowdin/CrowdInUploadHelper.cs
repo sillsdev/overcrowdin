@@ -5,13 +5,13 @@ using Crowdin.Api.SourceFiles;
 
 namespace Overcrowdin
 {
-	internal sealed class CrowdInUploadHelper : CrowdInHelperBase
+	internal sealed class CrowdinUploadHelper : CrowdinHelperBase
 	{
 		#region Member variables
 		#endregion
 
 		#region Constructor
-		private CrowdInUploadHelper(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null) : base(settings, fs, apiFactory, factory)
+		private CrowdinUploadHelper(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null) : base(settings, fs, apiFactory, factory)
 		{
 		}
 		#endregion
@@ -23,9 +23,9 @@ namespace Overcrowdin
 		#endregion
 
 		#region Public methods
-		public static async Task<CrowdInUploadHelper> Create(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null)
+		public static async Task<CrowdinUploadHelper> Create(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null)
 		{
-			return await Initialize(settings, fs, apiFactory, factory, (s, f, a, h) => new CrowdInUploadHelper(s, f, a, h));
+			return await Initialize(settings, fs, apiFactory, factory, (s, f, a, h) => new CrowdinUploadHelper(s, f, a, h));
 		}
 
 		public async Task UploadFile(string fileData, string filePath, FileParameters parameters)
@@ -55,7 +55,7 @@ namespace Overcrowdin
 		}
 		#endregion
 
-		#region Overrides of CrowdInHelper
+		#region Overrides of CrowdinHelperBase
 		protected override async Task InitializeInternal()
 		{
 			await base.InitializeInternal();

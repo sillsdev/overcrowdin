@@ -7,20 +7,20 @@ using Crowdin.Api.TranslationStatus;
 
 namespace Overcrowdin
 {
-	internal sealed class CrowdInDownloadHelper : CrowdInHelperBase
+	internal sealed class CrowdinDownloadHelper : CrowdInHelperBase
 	{
 		private const int languageReadyPercentage = 90;
 
 		#region Constructor
-		private CrowdInDownloadHelper(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null) : base(settings, fs, apiFactory, factory)
+		private CrowdinDownloadHelper(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null) : base(settings, fs, apiFactory, factory)
 		{
 		}
 		#endregion
 
 		#region Public methods
-		public static async Task<CrowdInDownloadHelper> Create(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null)
+		public static async Task<CrowdinDownloadHelper> Create(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null)
 		{
-			return await Initialize(settings, fs, apiFactory, factory, (s, f, a, h) => new CrowdInDownloadHelper(s, f, a, h));
+			return await Initialize(settings, fs, apiFactory, factory, (s, f, a, h) => new CrowdinDownloadHelper(s, f, a, h));
 		}
 
 		public async Task<bool> DownloadTranslations(string outputPath)

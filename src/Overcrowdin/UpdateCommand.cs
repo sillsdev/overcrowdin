@@ -36,7 +36,7 @@ namespace Overcrowdin
 			{
 				return 1;
 			}
-			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fileSystem, apiFactory);
+			var uploadHelper = await CrowdinUploadHelper.Create(credentials, fileSystem, apiFactory);
 
 			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.FilesToExportPatterns.Count)} files...");
 			var i = 0;
