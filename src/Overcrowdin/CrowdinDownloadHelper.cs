@@ -38,7 +38,7 @@ namespace Overcrowdin
 		}
 		#endregion
 
-		#region Overrides of CrowdInHelper
+		#region Overrides of CrowdinHelper
 		protected override async Task InitializeInternal()
 		{
 			await base.InitializeInternal();

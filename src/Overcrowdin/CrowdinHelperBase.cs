@@ -69,14 +69,14 @@ namespace Overcrowdin
 			if (settings == null)
 				return null;
 
-			T crowdIn = createHelper(settings, fs, apiFactory, factory);
+			T crowdin = createHelper(settings, fs, apiFactory, factory);
 
-			Console.WriteLine("Initializing CrowdIn...");
+			Console.WriteLine("Initializing Crowdin...");
 
-			await crowdIn.InitializeInternal();
+			await crowdin.InitializeInternal();
 
-			Console.WriteLine("CrowdIn initialization complete");
-			return crowdIn;
+			Console.WriteLine("Crowdin initialization complete");
+			return crowdin;
 		}
 
 		protected virtual async Task InitializeInternal()
@@ -135,7 +135,7 @@ namespace Overcrowdin
 		}
 
 		/// <summary>
-		/// Helper method to get the full count of items back from a call to the CrowdIn API (which has a limit of 500 per call)
+		/// Helper method to get the full count of items back from a call to the Crowdin API (which has a limit of 500 per call)
 		/// </summary>
 		protected static async Task<List<T>> GetFullList<T>(Func<int, int, Task<ResponseList<T>>> getTruncatedList)
 		{
