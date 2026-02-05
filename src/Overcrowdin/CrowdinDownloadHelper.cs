@@ -39,6 +39,8 @@ namespace Overcrowdin
 		#endregion
 
 		#region Overrides of CrowdinHelper
+		protected override bool CreateBranchIfNeeded => false;
+
 		protected override async Task InitializeInternal()
 		{
 			await base.InitializeInternal();

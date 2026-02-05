@@ -34,16 +34,11 @@ namespace Overcrowdin
 				var result = await crowdinDownloadHelper.DownloadTranslations(outputFile);
 				return result ? 0 : 1;
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				Console.WriteLine("Failed to export translations. Check your project id and project key.");
-				if (opts.Verbose)
-				{
-					Console.WriteLine($"{e.Message}:");
-					Console.WriteLine(e.StackTrace);
-				}
+				throw;
 			}
-			return 1;
 		}
 	}
 }
