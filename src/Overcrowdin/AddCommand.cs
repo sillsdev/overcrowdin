@@ -13,7 +13,7 @@ namespace Overcrowdin
 		[Verb("addfiles", HelpText = "Add files to Crowdin.")]
 		public class Options : GlobalOptions, IFileOptions
 		{
-			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			[Option('b', "branch", Required = false, HelpText = "Name of the Crowdin branch (overrides any branch in crowdin.json)")]
 			public string Branch { get; set; }
 
 			[Option('f', "file", Required = false, HelpText = "Path(s) to a file to upload")]

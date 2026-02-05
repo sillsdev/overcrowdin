@@ -12,7 +12,7 @@ namespace Overcrowdin
 		[Verb("download", HelpText = "Download the latest translations from Crowdin")]
 		public class Options : GlobalOptions, IBranchOptions
 		{
-			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			[Option('b', "branch", Required = false, HelpText = "Name of the Crowdin branch (overrides any branch in crowdin.json)")]
 			public string Branch { get; set; }
 
 			[Option('f', Required = true, HelpText = "Path and filename relative to the configured base path for the zip file.")]
