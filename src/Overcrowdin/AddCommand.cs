@@ -39,7 +39,7 @@ namespace Overcrowdin
 				return 0;
 			}
 
-			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fs, apiFactory);
+			var uploadHelper = await CrowdinUploadHelper.Create(credentials, fs, apiFactory);
 			// Add files to Crowdin
 			Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.FilesToExportPatterns.Count)} files...");
 			var i = 0;

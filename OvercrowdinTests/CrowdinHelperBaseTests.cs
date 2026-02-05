@@ -27,7 +27,7 @@ namespace OvercrowdinTests
 		}
 
 		private class TestCrowdinHelper(CrowdinProjectSettings settings, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
-			: CrowdInHelperBase(settings, null, apiFactory, factory)
+			: CrowdinHelperBase(settings, null, apiFactory, factory)
 		{
 			public static async Task<TestCrowdinHelper> Create(IConfiguration config, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
 			{

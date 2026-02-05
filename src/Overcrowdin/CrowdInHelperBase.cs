@@ -19,7 +19,7 @@ using File = Crowdin.Api.SourceFiles.File;
 
 namespace Overcrowdin
 {
-	public abstract class CrowdInHelperBase
+	public abstract class CrowdinHelperBase
 	{
 		#region Member variables
 		protected readonly ICrowdinApiClient _client;
@@ -49,7 +49,7 @@ namespace Overcrowdin
 		#endregion
 
 		#region Constructor
-		protected CrowdInHelperBase(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
+		protected CrowdinHelperBase(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
 		{
 			_projectStr = settings.Project;
 			_branch = string.IsNullOrEmpty(settings.Branch) ? "None" : settings.Branch;
@@ -64,7 +64,7 @@ namespace Overcrowdin
 
 		#region Protected helper methods
 		protected static async Task<T> Initialize<T>(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory,
-			Func<CrowdinProjectSettings, IFileSystem, ICrowdinClientFactory, IHttpClientFactory, T> createHelper) where T : CrowdInHelperBase
+			Func<CrowdinProjectSettings, IFileSystem, ICrowdinClientFactory, IHttpClientFactory, T> createHelper) where T : CrowdinHelperBase
 		{
 			if (settings == null)
 				return null;

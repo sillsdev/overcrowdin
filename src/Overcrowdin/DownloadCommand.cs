@@ -30,7 +30,7 @@ namespace Overcrowdin
 
 			try
 			{
-				var crowdinDownloadHelper = await CrowdInDownloadHelper.Create(credentials, fs, apiFactory, factory);
+				var crowdinDownloadHelper = await CrowdinDownloadHelper.Create(credentials, fs, apiFactory, factory);
 				var result = await crowdinDownloadHelper.DownloadTranslations(outputFile);
 				return result ? 0 : 1;
 			}
