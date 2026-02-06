@@ -140,6 +140,26 @@ namespace Overcrowdin
 				await _client.Storage.DeleteStorage(s.Id);
 		}
 
+		protected async Task<int> DeleteFilesInternal(IEnumerable<string> filePaths)
+		{
+			var deletedCount = 0;
+			foreach (var path in filePaths)
+			{
+				var normalizedPath = path.Replace(Path.DirectorySeparatorChar, '/');
+				var existing = _existingFiles.FirstOrDefault(f =>
+					string.Equals(f.Path, normalizedPath, StringComparison.OrdinalIgnoreCase));
+				if (existing == null)
+				{
+					continue;
+				}
+
+				await _fileExecutor.DeleteFile(_project.Id, existing.Id);
+				deletedCount++;
+			}
+
+			return deletedCount;
+		}
+
 		/// <summary>
 		/// Helper method to get the full count of items back from a call to the Crowdin API (which has a limit of 500 per call)
 		/// </summary>
