@@ -1,10 +1,9 @@
+using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using System;
 
 namespace Overcrowdin.ContentFiltering
 {
@@ -45,7 +44,7 @@ namespace Overcrowdin.ContentFiltering
 		private static bool HasContent(XNode doc, string xpath)
 		{
 			var evaluated = doc.XPathEvaluate(xpath);
-			if (evaluated is not IEnumerable enumerable)
+			if (!(evaluated is IEnumerable enumerable))
 			{
 				return false;
 			}
