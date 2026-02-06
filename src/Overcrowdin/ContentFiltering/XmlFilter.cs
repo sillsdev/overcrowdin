@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Collections;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using System;
 
 namespace Overcrowdin.ContentFiltering
 {
@@ -13,6 +15,13 @@ namespace Overcrowdin.ContentFiltering
 	public class XmlFilter : ContentFilterBase
 	{
 		public override string FileExtension => ".xml";
+
+		public override bool CanVerify(string path, params object[] args)
+		{
+			var typeArg = args?.OfType<string>().FirstOrDefault();
+			return base.CanVerify(path, args) ||
+			       string.Equals(typeArg, "xml", StringComparison.OrdinalIgnoreCase);
+		}
 
 		public override bool IsLocalizable(IFileSystem fs, string path, params object[] args)
 		{
@@ -29,8 +38,30 @@ namespace Overcrowdin.ContentFiltering
 			var translatableElements = (IEnumerable<string>)args[0];
 			// ReSharper disable PossibleMultipleEnumeration - most times, there will be only one element. Also, we
 			// expect all implementations to be list or array
-			return !translatableElements.Any() || translatableElements.Any(te => doc.XPathSelectElements(te).Any());
+			return !translatableElements.Any() || translatableElements.Any(te => HasContent(doc, te));
 			// ReSharper restore PossibleMultipleEnumeration
+		}
+
+		private static bool HasContent(XNode doc, string xpath)
+		{
+			var evaluated = doc.XPathEvaluate(xpath);
+			if (evaluated is not IEnumerable enumerable)
+			{
+				return false;
+			}
+
+			foreach (var node in enumerable)
+			{
+				switch (node)
+				{
+					case XElement element when !string.IsNullOrWhiteSpace(element.Value):
+						return true;
+					case XAttribute attribute when !string.IsNullOrWhiteSpace(attribute.Value):
+						return true;
+				}
+			}
+
+			return false;
 		}
 	}
 }

@@ -26,6 +26,8 @@ namespace OvercrowdinTests
 		[InlineData("Wrong Attribute", XmlGroupWithWrongAttribute)]
 		[InlineData("Wrong Element", XmlGroupWithWrongElement)]
 		[InlineData("No Attribute", XmlGroupWithoutAttribute)]
+		[InlineData("Empty Attribute Value", XmlGroupWithEmptyAttribute)]
+		[InlineData("Empty Element Text", XmlGroupWithEmptyElement)]
 		[InlineData("Empty File (almost)", "")]
 		public static void ExcludesWrongItems(string message, string xmlGroup)
 		{
@@ -58,6 +60,14 @@ namespace OvercrowdinTests
 		internal const string XmlGroupWithWrongAttribute = @"
   <group id='TopGroupWrongAtt'>
     <string wrong='No Records'/>
+  </group>";
+		internal const string XmlGroupWithEmptyAttribute = @"
+  <group id='TopGroupEmptyAtt'>
+    <string txt=''/>
+  </group>";
+		internal const string XmlGroupWithEmptyElement = @"
+  <group id='TopGroupEmptyElt'>
+    <string txt=''>   </string>
   </group>";
 		internal const string XmlGroupWithoutAttribute = @"
   <group id='TopGroupWithoutAtt'>

@@ -24,9 +24,10 @@ namespace Overcrowdin
 		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, IFileSystem fileSystem, ICrowdinClientFactory apiFactory)
 		{
 			var updateFileParametersList = new List<FileParameters>();
-			CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>());
+			var nonLocalizableFiles = new List<string>();
+			CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>(), nonLocalizableFiles);
 
-			if (!updateFileParametersList.Any())
+			if (!updateFileParametersList.Any() && !nonLocalizableFiles.Any())
 			{
 				Console.WriteLine("No files to add.");
 				return 0;
@@ -48,6 +49,15 @@ namespace Overcrowdin
 					await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file), file, updateFileParameters);
 				}
 			} while (++i < updateFileParametersList.Count);
+
+			if (nonLocalizableFiles.Any())
+			{
+				var deleted = await uploadHelper.DeleteFiles(nonLocalizableFiles);
+				if (deleted > 0 && opts.Verbose)
+				{
+					Console.WriteLine($"Removed {deleted} files with no localizable content.");
+				}
+			}
 
 			// Give results
 			if (uploadHelper.FileErrorCount == 0)
