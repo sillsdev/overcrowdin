@@ -54,8 +54,18 @@ namespace Overcrowdin.ContentFiltering
 			{
 				switch (node)
 				{
-					case XElement element when !string.IsNullOrWhiteSpace(element.Value):
-						return true;
+					case XElement element:
+						// Check element's text content
+						if (!string.IsNullOrWhiteSpace(element.Value))
+						{
+							return true;
+						}
+						// Check element's attributes for non-empty values
+						if (element.Attributes().Any(attr => !string.IsNullOrWhiteSpace(attr.Value)))
+						{
+							return true;
+						}
+						break;
 					case XAttribute attribute when !string.IsNullOrWhiteSpace(attribute.Value):
 						return true;
 				}
