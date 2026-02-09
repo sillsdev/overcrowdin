@@ -9,7 +9,7 @@ namespace Overcrowdin.ContentFiltering
 
 		public abstract bool IsLocalizable(IFileSystem fs, string path, params object[] args);
 
-		public virtual bool CanVerify(string path)
+		public virtual bool CanVerify(string path, params object[] args)
 		{
 			return FileExtension.Equals(Path.GetExtension(path));
 		}

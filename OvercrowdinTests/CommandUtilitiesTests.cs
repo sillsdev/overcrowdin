@@ -504,5 +504,28 @@ namespace OvercrowdinTests
 			Assert.Single(fileParams.FilesToExportPatterns);
 			Assert.Equal(fileNamePassesFilter, fileParams.FilesToExportPatterns.Keys.First());
 		}
+
+		[Fact]
+		public void XmlTypeFiltersRegardlessOfExtension()
+		{
+			var mockFileSystem = new MockFileSystem();
+			const string xmlAsTxt = "strings/string.txt";
+			mockFileSystem.AddFile(xmlAsTxt, new MockFileData(XmlFilterTests.XmlOpenTag + XmlFilterTests.XmlGroupCorrect + XmlFilterTests.XmlCloseTag));
+			dynamic configJson = SetUpConfig(xmlAsTxt);
+			var file = configJson.files[0];
+			file.type = "xml";
+			file.translatable_elements = new JArray { XmlFilterTests.XpathToTranslatableElements };
+			var fileParamsList = new List<AddFileParameters>();
+
+			using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString())))
+			{
+				var config = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
+				CommandUtilities.GetFilesFromConfiguration(config, null, mockFileSystem, fileParamsList, new SortedSet<string>());
+			}
+
+			Assert.Single(fileParamsList);
+			Assert.Single(fileParamsList[0].FilesToExportPatterns);
+			Assert.Equal(xmlAsTxt.Replace('\\', '/'), fileParamsList[0].FilesToExportPatterns.Keys.First());
+		}
 	}
 }

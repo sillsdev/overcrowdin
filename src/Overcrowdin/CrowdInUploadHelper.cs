@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using Crowdin.Api.SourceFiles;
@@ -41,6 +42,11 @@ namespace Overcrowdin
 				Console.Error.WriteLine("    " + (e.InnerException != null ? e.InnerException.Message : e.Message));
 				FileErrorCount++;
 			}
+		}
+
+		public async Task<int> DeleteFiles(IEnumerable<string> filePaths)
+		{
+			return await DeleteFilesInternal(filePaths);
 		}
 
 		[Obsolete]

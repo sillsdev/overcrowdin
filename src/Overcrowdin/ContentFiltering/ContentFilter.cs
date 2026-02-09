@@ -22,7 +22,7 @@ namespace Overcrowdin.ContentFiltering
 		/// </summary>
 		public static bool IsLocalizable(IFileSystem fs, string path, params object[] args)
 		{
-			var filter = Filters.FirstOrDefault(f => f.CanVerify(path));
+			var filter = Filters.FirstOrDefault(f => f.CanVerify(path, args));
 			if (filter == null)
 			{
 				return true; // this file type is not filtered; all files of this type are localizable
