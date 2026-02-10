@@ -13,7 +13,7 @@ namespace Overcrowdin
 		[Verb("updatefiles", HelpText = "Update files in Crowdin. Will use crowdin.json or files passed in as arguments.")]
 		public class Options : GlobalOptions, IFileOptions
 		{
-			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			[Option('b', "branch", Required = false, HelpText = "Name of the Crowdin branch (overrides any branch in crowdin.json)")]
 			public string Branch { get; set; }
 
 			[Option('f', "file", Required = false, HelpText = "Path to a file to upload")]
@@ -31,12 +31,12 @@ namespace Overcrowdin
 				Console.WriteLine("No files to add.");
 				return 0;
 			}
-			var credentials = await CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
 			if (credentials == null)
 			{
 				return 1;
 			}
-			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fileSystem, apiFactory);
+			var uploadHelper = await CrowdinUploadHelper.Create(credentials, fileSystem, apiFactory);
 
 			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.FilesToExportPatterns.Count)} files...");
 			var i = 0;

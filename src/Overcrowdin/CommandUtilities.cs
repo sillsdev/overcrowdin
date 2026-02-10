@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Overcrowdin.ContentFiltering;
@@ -12,7 +11,7 @@ namespace Overcrowdin
 {
 	public static class CommandUtilities
 	{
-		public static async Task<CrowdinProjectSettings> GetProjectSettingsFromConfiguration(IConfiguration config, string optionsBranch, ICrowdinClientFactory apiFactory)
+		public static CrowdinProjectSettings GetProjectSettingsFromConfiguration(IConfiguration config, string optionsBranch, ICrowdinClientFactory apiFactory)
 		{
 			var apiKeyEnvVar = config["api_key_env"];
 			if (string.IsNullOrEmpty(apiKeyEnvVar))
@@ -31,8 +30,7 @@ namespace Overcrowdin
 
 			var branch = string.IsNullOrEmpty(optionsBranch) ? config["branch"] : optionsBranch;
 
-			var settings = await CrowdinProjectSettings.Init(config["project_identifier"], branch, apiKey, apiFactory);
-			return settings;
+			return CrowdinProjectSettings.Init(config["project_identifier"], branch, apiKey, apiFactory);
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
@@ -58,7 +56,7 @@ namespace Overcrowdin
 			}
 			else
 			{
-				GetFilesFromConfiguration(config, opts, fs, fileParamsList, folders);
+				GetFilesFromConfiguration(config, fs, fileParamsList, folders);
 			}
 
 			AddParentFolders(folders);
@@ -72,7 +70,7 @@ namespace Overcrowdin
 		///  }
 		/// ]
 		/// </summary>
-		public static void GetFilesFromConfiguration<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
+		public static void GetFilesFromConfiguration<T>(IConfiguration config, IFileSystem fs,
 			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
 		{
 			var basePath = config.GetValue<string>("base_path");
@@ -100,7 +98,6 @@ namespace Overcrowdin
 
 				var fileParams = new T
 				{
-					// REVIEW (Hasso) 2020.09: should we allow a branch from Opts when getting files from the config file?
 					FilesToExportPatterns = new Dictionary<string, string>()
 				};
 				var translatableElements = section.GetSection("translatable_elements").GetChildren().Select(te => te.Get<string>()).ToList();
@@ -151,7 +148,7 @@ namespace Overcrowdin
 				}
 				if (fileParams.FilesToExportPatterns.Any())
 				{
-					fileParamsList.AddRange(BatchFiles(fileParams));
+					fileParamsList.Add(fileParams);
 				}
 			}
 		}
@@ -166,13 +163,13 @@ namespace Overcrowdin
 			return val != 0;
 		}
 
-		// ENHANCE (Hasso) 2020.01: optimize for mostly-full directory structures?
 		private static void AddParentFolders(ISet<string> folders)
 		{
 			foreach (var folder in folders.ToArray())
 			{
 				var superFolder = GetNormalizedParentFolder(folder);
-				while (!string.IsNullOrEmpty(superFolder))
+				// If superfolder is already in the set, its parents will be, too.
+				while (!string.IsNullOrEmpty(superFolder) && !folders.Contains(superFolder))
 				{
 					folders.Add(superFolder);
 					superFolder = GetNormalizedParentFolder(superFolder);
@@ -184,17 +181,6 @@ namespace Overcrowdin
 		{
 			// On Windows, each Path call normalizes to '\', but we are normalizing to '/' for cross-platform compatibility.
 			return Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
-		}
-
-		/// <remarks>REVIEW (Hasso) 2025.11: this is no longer needed in API v2</remarks>>
-		public static T[] BatchFiles<T>(T allFiles) where T : FileParameters, new()
-		{
-			return new[] { allFiles };
-		}
-
-		public static string GetBranch(IConfiguration config, IBranchOptions opts)
-		{
-			return opts?.Branch ?? config["branch"];
 		}
 	}
 
@@ -213,11 +199,5 @@ namespace Overcrowdin
 		public bool? TranslateAttributes;
 		public bool? ContentSegmentation;
 		public List<string> TranslatableElements;
-	}
-
-	[Obsolete]
-	public interface ICrowdinCredentials
-	{
-		string AccessToken { get; }
 	}
 }

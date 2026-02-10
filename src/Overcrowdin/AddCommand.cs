@@ -13,7 +13,7 @@ namespace Overcrowdin
 		[Verb("addfiles", HelpText = "Add files to Crowdin.")]
 		public class Options : GlobalOptions, IFileOptions
 		{
-			[Option('b', "branch", Required = false, HelpText = "Name of the version branch")]
+			[Option('b', "branch", Required = false, HelpText = "Name of the Crowdin branch (overrides any branch in crowdin.json)")]
 			public string Branch { get; set; }
 
 			[Option('f', "file", Required = false, HelpText = "Path(s) to a file to upload")]
@@ -23,7 +23,7 @@ namespace Overcrowdin
 		public static async Task<int> AddFilesToCrowdin(IConfiguration config, Options opts, IFileSystem fs, ICrowdinClientFactory apiFactory)
 		{
 			var projectId = config["project_identifier"];
-			var credentials = await CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
 			if (credentials == null)
 			{
 				return 1;
@@ -39,7 +39,7 @@ namespace Overcrowdin
 				return 0;
 			}
 
-			var uploadHelper = await CrowdInUploadHelper.Create(credentials, fs, apiFactory);
+			var uploadHelper = await CrowdinUploadHelper.Create(credentials, fs, apiFactory);
 			// Add files to Crowdin
 			Console.WriteLine($"Adding {addFileParamsList.Sum(afp => afp.FilesToExportPatterns.Count)} files...");
 			var i = 0;

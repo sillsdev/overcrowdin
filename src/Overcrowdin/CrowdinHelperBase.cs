@@ -19,7 +19,7 @@ using File = Crowdin.Api.SourceFiles.File;
 
 namespace Overcrowdin
 {
-	public abstract class CrowdInHelperBase
+	public abstract class CrowdinHelperBase
 	{
 		#region Member variables
 		protected readonly ICrowdinApiClient _client;
@@ -49,7 +49,7 @@ namespace Overcrowdin
 		#endregion
 
 		#region Constructor
-		protected CrowdInHelperBase(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
+		protected CrowdinHelperBase(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
 		{
 			_projectStr = settings.Project;
 			_branch = string.IsNullOrEmpty(settings.Branch) ? "None" : settings.Branch;
@@ -64,25 +64,22 @@ namespace Overcrowdin
 
 		#region Protected helper methods
 		protected static async Task<T> Initialize<T>(CrowdinProjectSettings settings, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory,
-			Func<CrowdinProjectSettings, IFileSystem, ICrowdinClientFactory, IHttpClientFactory, T> createHelper) where T : CrowdInHelperBase
+			Func<CrowdinProjectSettings, IFileSystem, ICrowdinClientFactory, IHttpClientFactory, T> createHelper) where T : CrowdinHelperBase
 		{
 			if (settings == null)
 				return null;
 
-			T crowdIn = createHelper(settings, fs, apiFactory, factory);
+			T crowdin = createHelper(settings, fs, apiFactory, factory);
 
-			Console.WriteLine("Initializing CrowdIn...");
+			Console.WriteLine("Initializing Crowdin...");
 
-			var initialized = await crowdIn.InitializeInternal();
+			await crowdin.InitializeInternal();
 
-			if (!initialized)
-				return null;
-
-			Console.WriteLine("CrowdIn initialization complete");
-			return crowdIn;
+			Console.WriteLine("Crowdin initialization complete");
+			return crowdin;
 		}
 
-		protected virtual async Task<bool> InitializeInternal()
+		protected virtual async Task InitializeInternal()
 		{
 			Console.WriteLine("    Checking project...");
 			List<Project> projects = await GetFullList((offset, count) => _client.ProjectsGroups.ListProjects<Project>(limit: count, offset: offset));
@@ -96,15 +93,14 @@ namespace Overcrowdin
 
 			if (_project == null)
 			{
-				Console.Error.WriteLine($"Project matching '{_projectStr}' could not be found. Check to make sure the user that generated the access token has access to the project.");
-				return false;
+				throw new Exception($"Project matching '{_projectStr}' could not be found. Check to make sure the user that generated the access token has access to the project.");
 			}
 
 			// check to see if branch is needed
 			if (_branch.Equals("none", StringComparison.OrdinalIgnoreCase))
 			{
 				_branchId = null;
-				return true;
+				return;
 			}
 
 			Console.WriteLine("    Checking branch...");
@@ -119,13 +115,10 @@ namespace Overcrowdin
 				Console.WriteLine($"Branch matching '{_branch}' could not be found in the project {_projectStr}, adding it.");
 				var addedBranch = await _branchExecutor.AddBranch(_project.Id, new AddBranchRequest { Name = _branch });
 				_branchId = addedBranch.Id;
-				return true;
 			}
-
-			return true;
 		}
 
-		protected async Task<bool> PrepareForUploads()
+		protected async Task PrepareForUploads()
 		{
 			Console.WriteLine("    Loading existing file list...");
 			_existingFiles = await GetFullList((offset, count) => _fileExecutor.ListFiles<FileInfoCollectionResource>(_project.Id, count, offset, _branchId, recursion: 1));
@@ -139,12 +132,10 @@ namespace Overcrowdin
 			List<StorageResource> existingStorages = await GetFullList((offset, count) => _client.Storage.ListStorages(count, offset));
 			foreach (StorageResource s in existingStorages)
 				await _client.Storage.DeleteStorage(s.Id);
-
-			return true;
 		}
 
 		/// <summary>
-		/// Helper method to get the full count of items back from a call to the CrowdIn API (which has a limit of 500 per call)
+		/// Helper method to get the full count of items back from a call to the Crowdin API (which has a limit of 500 per call)
 		/// </summary>
 		protected static async Task<List<T>> GetFullList<T>(Func<int, int, Task<ResponseList<T>>> getTruncatedList)
 		{
