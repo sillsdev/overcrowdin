@@ -51,6 +51,5 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="System.IO.Abstractions" Version="22.1.0" />
-    <PackageReference Include="System.Text.Json" Version="10.0.2" /> <!--the automatically included version includes a vulnerability; specify a version for now -->
   </ItemGroup>
 </Project>
