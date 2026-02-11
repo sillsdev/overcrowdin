@@ -29,6 +29,8 @@ namespace OvercrowdinTests
 		private class TestCrowdinHelper(CrowdinProjectSettings settings, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
 			: CrowdinHelperBase(settings, null, apiFactory, factory)
 		{
+			protected override bool CreateBranchIfNeeded => throw new NotImplementedException();
+
 			public static async Task<TestCrowdinHelper> Create(IConfiguration config, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
 			{
 				var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, null, apiFactory);
