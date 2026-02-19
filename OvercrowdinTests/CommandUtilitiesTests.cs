@@ -500,7 +500,8 @@ namespace OvercrowdinTests
 			var mockFileSystem = new MockFileSystem();
 			const string xmlAsTxt = "strings/string.txt";
 			mockFileSystem.AddFile(xmlAsTxt, new MockFileData(XmlFilterTests.XmlOpenTag + XmlFilterTests.XmlGroupCorrect + XmlFilterTests.XmlCloseTag));
-			dynamic configJson = SetUpConfig(xmlAsTxt);
+			mockFileSystem.AddFile("strings/no-string.txt", new MockFileData(XmlFilterTests.XmlOpenTag + XmlFilterTests.XmlCloseTag));
+			dynamic configJson = SetUpConfig("strings/*.txt");
 			var file = configJson.files[0];
 			file.type = "xml";
 			file.translatable_elements = new JArray { XmlFilterTests.XpathToTranslatableElements };

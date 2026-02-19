@@ -102,8 +102,6 @@ namespace OvercrowdinTests
 			using var memStream = new MemoryStream(Encoding.UTF8.GetBytes(configJson.ToString()));
 			var configurationBuilder = new ConfigurationBuilder().AddNewtonsoftJsonStream(memStream).Build();
 
-			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=25&offset=0&hasManagerAccess=0").Respond(
-				"application/json", $"{{'data':[{{'data': {{'id': {TestProjectId},'identifier': '{TestProjectName}'}}}}]}}");
 			_mockHttpClient.Expect("https://api.crowdin.com/api/v2/projects?limit=500&offset=0&hasManagerAccess=0").Respond(
 				"application/json", $"{{'data':[{{'data': {{'id': {TestProjectId},'identifier': '{TestProjectName}'}}}}]}}");
 			_mockHttpClient.Expect($"https://api.crowdin.com/api/v2/projects/{TestProjectId}/files?limit=500&offset=0&recursion=1").Respond(
