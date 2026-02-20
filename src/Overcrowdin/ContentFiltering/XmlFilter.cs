@@ -54,18 +54,13 @@ namespace Overcrowdin.ContentFiltering
 			{
 				switch (node)
 				{
-					case XElement element:
-						// Check element's text content
-						if (!string.IsNullOrWhiteSpace(element.Value))
-						{
-							return true;
-						}
-						// Check element's attributes for non-empty values
-						if (element.Attributes().Any(attr => !string.IsNullOrWhiteSpace(attr.Value)))
-						{
-							return true;
-						}
-						break;
+					// Crowdin interprets XPath differently than .NET's System.Xml.XPath. For example,
+					//  * In .NET, //elt[@att] selects all <elt> elements with an att attribute, but Crowdin will select the value of the att attribute,
+					//    so <elt att="this can be translated">this cannot</elt>.
+					//  * In .NET, //elt/@att selects the value of the att attribute, but Crowdin will select any attribute of an <elt> element,
+					//    so <elt att="this can be translated" other="so can this"/>.
+					// To account for this, we check both the value of the node and the values of its attributes (this is easier than trying to parse the XPath ourselves).
+					case XElement element when (!string.IsNullOrWhiteSpace(element.Value) || element.Attributes().Any(attr => !string.IsNullOrWhiteSpace(attr.Value))):
 					case XAttribute attribute when !string.IsNullOrWhiteSpace(attribute.Value):
 						return true;
 				}

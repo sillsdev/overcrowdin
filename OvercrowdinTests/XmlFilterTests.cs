@@ -23,11 +23,11 @@ namespace OvercrowdinTests
 		}
 
 		[Theory]
-		[InlineData("Wrong Attribute", XmlGroupWithWrongAttribute)]
 		[InlineData("Wrong Element", XmlGroupWithWrongElement)]
-		[InlineData("No Attribute", XmlGroupWithoutAttribute)]
+		[InlineData("Wrong Attribute", XmlGroupWithWrongAttribute)]
 		[InlineData("Empty Attribute Value", XmlGroupWithEmptyAttribute)]
 		[InlineData("Empty Element Text", XmlGroupWithEmptyElement)]
+		[InlineData("No Attribute", XmlGroupWithoutAttribute)]
 		[InlineData("Empty File (almost)", "")]
 		public static void ExcludesWrongItems(string message, string xmlGroup)
 		{
