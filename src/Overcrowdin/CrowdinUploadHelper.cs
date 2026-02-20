@@ -48,17 +48,6 @@ namespace Overcrowdin
 		{
 			return await DeleteFilesInternal(filePaths);
 		}
-
-		[Obsolete]
-		public async Task<int> CleanupExtraneousFiles()
-		{
-			// Only delete files if there were no errors since errors could cause the list-of-files-to-be-deleted
-			// to contain files that just failed to upload.
-			if (_existingFiles.Count == 0 || FileErrorCount > 0)
-				return 0;
-
-			return await CleanUpExtraneousFilesInternal();
-		}
 		#endregion
 
 		#region Overrides of CrowdinHelperBase
