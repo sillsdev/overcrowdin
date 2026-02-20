@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO.Abstractions;
 using System.Threading.Tasks;
 using Crowdin.Api.SourceFiles;
@@ -43,15 +44,9 @@ namespace Overcrowdin
 			}
 		}
 
-		[Obsolete]
-		public async Task<int> CleanupExtraneousFiles()
+		public async Task<int> DeleteFiles(IEnumerable<string> filePaths)
 		{
-			// Only delete files if there were no errors since errors could cause the list-of-files-to-be-deleted
-			// to contain files that just failed to upload.
-			if (_existingFiles.Count == 0 || FileErrorCount > 0)
-				return 0;
-
-			return await CleanUpExtraneousFilesInternal();
+			return await DeleteFilesInternal(filePaths);
 		}
 		#endregion
 

@@ -34,7 +34,7 @@ namespace Overcrowdin
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
-			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
+			List<T> fileParamsList, SortedSet<string> folders, ICollection<string> nonLocalizableFiles = null) where T : FileParameters, new()
 		{
 			// handle files specified on the command line
 			if (opts.Files != null && opts.Files.Any())
@@ -56,7 +56,7 @@ namespace Overcrowdin
 			}
 			else
 			{
-				GetFilesFromConfiguration(config, fs, fileParamsList, folders);
+				GetFilesFromConfiguration(config, fs, fileParamsList, folders, nonLocalizableFiles);
 			}
 
 			AddParentFolders(folders);
@@ -71,7 +71,7 @@ namespace Overcrowdin
 		/// ]
 		/// </summary>
 		public static void GetFilesFromConfiguration<T>(IConfiguration config, IFileSystem fs,
-			List<T> fileParamsList, SortedSet<string> folders) where T : FileParameters, new()
+			List<T> fileParamsList, SortedSet<string> folders, ICollection<string> nonLocalizableFiles = null) where T : FileParameters, new()
 		{
 			var basePath = config.GetValue<string>("base_path");
 			basePath = basePath.Equals(".")
@@ -100,6 +100,7 @@ namespace Overcrowdin
 				{
 					FilesToExportPatterns = new Dictionary<string, string>()
 				};
+				var fileType = section.GetValue<string>("type");
 				var translatableElements = section.GetSection("translatable_elements").GetChildren().Select(te => te.Get<string>()).ToList();
 				if (fileParams is AddFileParameters addFileParams)
 				{
@@ -132,18 +133,25 @@ namespace Overcrowdin
 					matcher.AddExclude(ignore);
 				}
 				var matches = matcher.Execute(basePathInfoWrapper);
-				foreach (var sourceFile in matches.Files.Select(match => match.Path)
-					// REVIEW (Hasso) 2025.11: If a file is modified so that it no longer has translatable elements, this filter will leave the old version in Crowdin on Update.
-					.Where(f => ContentFilter.IsLocalizable(fs, f, translatableElements)))
+				// Files without translatable elements are tracked separately and removed from Crowdin during Update.
+				foreach (var sourceFile in matches.Files.Select(match => match.Path))
 				{
-					// Key is the relative path with Unix directory separators
-					var key = sourceFile.Replace(Path.DirectorySeparatorChar, '/');
-					fileParams.FilesToExportPatterns[key] = translation;
-
-					var dir = GetNormalizedParentFolder(key);
-					if (!string.IsNullOrEmpty(dir))
+					var isLocalizable = ContentFilter.IsLocalizable(fs, sourceFile, translatableElements, fileType);
+					if (isLocalizable)
 					{
-						folders.Add(dir);
+						// Key is the relative path with Unix directory separators
+						var key = sourceFile.Replace(Path.DirectorySeparatorChar, '/');
+						fileParams.FilesToExportPatterns[key] = translation;
+
+						var dir = GetNormalizedParentFolder(key);
+						if (!string.IsNullOrEmpty(dir))
+						{
+							folders.Add(dir);
+						}
+					}
+					else if (nonLocalizableFiles != null)
+					{
+						nonLocalizableFiles.Add(sourceFile.Replace(Path.DirectorySeparatorChar, '/'));
 					}
 				}
 				if (fileParams.FilesToExportPatterns.Any())

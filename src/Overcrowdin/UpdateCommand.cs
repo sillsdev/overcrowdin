@@ -24,9 +24,10 @@ namespace Overcrowdin
 		public static async Task<int> UpdateFilesInCrowdin(IConfiguration config, Options opts, IFileSystem fileSystem, ICrowdinClientFactory apiFactory)
 		{
 			var updateFileParametersList = new List<FileParameters>();
-			CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>());
+			var nonLocalizableFiles = new List<string>();
+			CommandUtilities.GetFileList(config, opts, fileSystem, updateFileParametersList, new SortedSet<string>(), nonLocalizableFiles);
 
-			if (!updateFileParametersList.Any())
+			if (!updateFileParametersList.Any() && !nonLocalizableFiles.Any())
 			{
 				Console.WriteLine("No files to add.");
 				return 0;
@@ -38,16 +39,28 @@ namespace Overcrowdin
 			}
 			var uploadHelper = await CrowdinUploadHelper.Create(credentials, fileSystem, apiFactory);
 
-			Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.FilesToExportPatterns.Count)} files...");
-			var i = 0;
-			do
+			if (updateFileParametersList.Any())
 			{
-				var updateFileParameters = updateFileParametersList[i];
-				foreach (var file in updateFileParameters.FilesToExportPatterns.Keys)
+				Console.WriteLine($"Updating {updateFileParametersList.Sum(ufp => ufp.FilesToExportPatterns.Count)} files...");
+				var i = 0;
+				do
 				{
-					await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file), file, updateFileParameters);
+					var updateFileParameters = updateFileParametersList[i];
+					foreach (var file in updateFileParameters.FilesToExportPatterns.Keys)
+					{
+						await uploadHelper.UploadFile(fileSystem.File.ReadAllText(file), file, updateFileParameters);
+					}
+				} while (++i < updateFileParametersList.Count);
+			}
+
+			if (nonLocalizableFiles.Any())
+			{
+				var deleted = await uploadHelper.DeleteFiles(nonLocalizableFiles);
+				if (deleted > 0 && opts.Verbose)
+				{
+					Console.WriteLine($"Removed {deleted} files with no localizable content.");
 				}
-			} while (++i < updateFileParametersList.Count);
+			}
 
 			// Give results
 			if (uploadHelper.FileErrorCount == 0)
@@ -60,17 +73,7 @@ namespace Overcrowdin
 			}
 			else
 			{
-				Console.WriteLine("A failure occurred while updating the following:\n");
-				foreach (var f in updateFileParametersList[i - 1].FilesToExportPatterns)
-				{
-					Console.WriteLine("  " + f.Key);
-				}
-
-				// A problem file does not cause Crowdin to roll back a batch. Alert the user if some files may have been updated.
-				if (i > 1 || updateFileParametersList[0].FilesToExportPatterns.Count > 1)
-				{
-					Console.WriteLine("Some files may have been updated.");
-				}
+				Console.WriteLine("An error occurred while updating files. Some files may still have been updated.");
 			}
 
 			return uploadHelper.FileErrorCount;
