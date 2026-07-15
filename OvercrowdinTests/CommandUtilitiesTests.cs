@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Abstractions.TestingHelpers;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json.Linq;
 using Overcrowdin;
@@ -28,6 +27,26 @@ namespace OvercrowdinTests
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
 			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory);
 			Assert.Null(result);
+		}
+
+		[Theory]
+		[InlineData(true)]
+		[InlineData(false)]
+		public void VerboseFlagIsPropagatedToSettings(bool verbose)
+		{
+			Environment.SetEnvironmentVariable(TestApiKeyEnv, "fakeApiKey");
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(TestApiKeyEnv);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory, verbose);
+			Assert.Equal(verbose, result.Verbose);
+		}
+
+		[Fact]
+		public void VerboseDefaultsToFalse()
+		{
+			Environment.SetEnvironmentVariable(TestApiKeyEnv, "fakeApiKey");
+			_mockConfig.Setup(config => config["api_key_env"]).Returns(TestApiKeyEnv);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory);
+			Assert.False(result.Verbose);
 		}
 
 		[Fact]
