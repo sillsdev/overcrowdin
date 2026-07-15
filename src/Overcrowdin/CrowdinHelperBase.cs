@@ -28,6 +28,7 @@ namespace Overcrowdin
 
 		private readonly string _projectStr;
 		private readonly string _branch;
+		private readonly bool _verbose;
 
 		protected Project _project;
 		protected long? _branchId;
@@ -55,6 +56,7 @@ namespace Overcrowdin
 		{
 			_projectStr = settings.Project;
 			_branch = string.IsNullOrEmpty(settings.Branch) ? "None" : settings.Branch;
+			_verbose = settings.Verbose;
 			_client = apiFactory.Create(settings.AccessToken);
 			_branchExecutor = new BranchesApiExecutor(_client);
 			_fileExecutor = new SourceFilesApiExecutor(_client);
@@ -86,10 +88,16 @@ namespace Overcrowdin
 			Console.WriteLine("    Checking project...");
 			List<Project> projects = await GetFullList((offset, count) => _client.ProjectsGroups.ListProjects<Project>(limit: count, offset: offset));
 
-			Console.WriteLine("Recognized projects...");
-			foreach (var proj in projects)
+			// Only list the accessible projects in verbose mode: the token may have
+			// access to projects beyond this one, and callers (e.g. public CI logs)
+			// should not leak that list by default.
+			if (_verbose)
 			{
-				Console.WriteLine(" - Name:  " + proj.Name + "\t- Identifier:  " + proj.Identifier + "\t- Description:  " + proj.Description);
+				Console.WriteLine("Recognized projects...");
+				foreach (var proj in projects)
+				{
+					Console.WriteLine(" - Name:  " + proj.Name + "\t- Identifier:  " + proj.Identifier + "\t- Description:  " + proj.Description);
+				}
 			}
 			_project = projects.Find(p => p.Identifier.Equals(_projectStr, StringComparison.OrdinalIgnoreCase));
 
