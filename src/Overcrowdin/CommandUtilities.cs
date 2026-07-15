@@ -11,7 +11,7 @@ namespace Overcrowdin
 {
 	public static class CommandUtilities
 	{
-		public static CrowdinProjectSettings GetProjectSettingsFromConfiguration(IConfiguration config, string optionsBranch, ICrowdinClientFactory apiFactory, bool verbose = false)
+		public static CrowdinProjectSettings GetProjectSettingsFromConfiguration(IConfiguration config, string optionsBranch, bool verbose = false)
 		{
 			var apiKeyEnvVar = config["api_key_env"];
 			if (string.IsNullOrEmpty(apiKeyEnvVar))
@@ -30,7 +30,7 @@ namespace Overcrowdin
 
 			var branch = string.IsNullOrEmpty(optionsBranch) ? config["branch"] : optionsBranch;
 
-			return CrowdinProjectSettings.Init(config["project_identifier"], branch, apiKey, apiFactory, verbose);
+			return CrowdinProjectSettings.Init(config["project_identifier"], branch, apiKey, verbose);
 		}
 
 		public static void GetFileList<T>(IConfiguration config, IFileOptions opts, IFileSystem fs,
