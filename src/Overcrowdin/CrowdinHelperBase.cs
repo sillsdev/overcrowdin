@@ -88,9 +88,8 @@ namespace Overcrowdin
 			Console.WriteLine("    Checking project...");
 			List<Project> projects = await GetFullList((offset, count) => _client.ProjectsGroups.ListProjects<Project>(limit: count, offset: offset));
 
-			// Only list the accessible projects in verbose mode: the token may have
-			// access to projects beyond this one, and callers (e.g. public CI logs)
-			// should not leak that list by default.
+			// Only list the accessible projects in verbose mode: the token may have access to projects beyond this one,
+			// and callers (e.g. public CI logs) should not leak that list by default.
 			if (_verbose)
 			{
 				Console.WriteLine("Recognized projects...");
@@ -361,7 +360,7 @@ namespace Overcrowdin
 
 				maxWaitTime += waitPeriod;
 			} while (build.Status == BuildStatus.InProgress && taskTime < maxWaitTime);
-			if(taskTime >= maxWaitTime)
+			if (taskTime >= maxWaitTime)
 				build.Status = BuildStatus.Failed;
 
 			return build;
