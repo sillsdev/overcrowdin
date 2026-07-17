@@ -33,7 +33,7 @@ namespace OvercrowdinTests
 
 			public static async Task<TestCrowdinHelper> Create(IConfiguration config, ICrowdinClientFactory apiFactory, IHttpClientFactory factory)
 			{
-				var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, null);
+				var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, null, apiFactory);
 				return await Initialize(credentials, null, apiFactory, factory, (s, _, a, h) => new TestCrowdinHelper(s, a, h));
 			}
 		}

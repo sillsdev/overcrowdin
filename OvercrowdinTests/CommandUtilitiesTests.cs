@@ -16,7 +16,7 @@ namespace OvercrowdinTests
 		[Fact]
 		public void IncompleteConfigReturnsNull()
 		{
-			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory);
 			Assert.Null(result);
 		}
 
@@ -25,7 +25,7 @@ namespace OvercrowdinTests
 		{
 			const string apiKeyEnvVar = "NOKEYEXISTS";
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(apiKeyEnvVar);
-			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory);
 			Assert.Null(result);
 		}
 
@@ -36,7 +36,7 @@ namespace OvercrowdinTests
 		{
 			Environment.SetEnvironmentVariable(TestApiKeyEnv, "fakeApiKey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(TestApiKeyEnv);
-			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, verbose);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory, verbose);
 			Assert.Equal(verbose, result.Verbose);
 		}
 
@@ -45,7 +45,7 @@ namespace OvercrowdinTests
 		{
 			Environment.SetEnvironmentVariable(TestApiKeyEnv, "fakeApiKey");
 			_mockConfig.Setup(config => config["api_key_env"]).Returns(TestApiKeyEnv);
-			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null);
+			var result = CommandUtilities.GetProjectSettingsFromConfiguration(_mockConfig.Object, null, MockApiFactory);
 			Assert.False(result.Verbose);
 		}
 

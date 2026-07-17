@@ -23,7 +23,7 @@ namespace Overcrowdin
 		public static async Task<int> AddFilesToCrowdin(IConfiguration config, Options opts, IFileSystem fs, ICrowdinClientFactory apiFactory)
 		{
 			var projectId = config["project_identifier"];
-			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, opts.Verbose);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory, opts.Verbose);
 			if (credentials == null)
 			{
 				return 1;

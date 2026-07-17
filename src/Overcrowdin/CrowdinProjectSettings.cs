@@ -15,7 +15,7 @@ namespace Overcrowdin
 			Verbose = verbose;
 		}
 
-		public static CrowdinProjectSettings Init(string project, string branchName, string accessToken, bool verbose = false)
+		public static CrowdinProjectSettings Init(string project, string branchName, string accessToken, ICrowdinClientFactory apiFactory, bool verbose = false)
 		{
 			return new CrowdinProjectSettings(project, branchName, accessToken, verbose);
 		}
