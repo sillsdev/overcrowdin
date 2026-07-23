@@ -21,7 +21,7 @@ namespace Overcrowdin
 
 		public static async Task<int> DownloadFromCrowdin(IConfiguration config, Options opts, IFileSystem fs, ICrowdinClientFactory apiFactory, IHttpClientFactory factory = null)
 		{
-			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory);
+			var credentials = CommandUtilities.GetProjectSettingsFromConfiguration(config, opts.Branch, apiFactory, opts.Verbose);
 			if (credentials == null)
 			{
 				return 1;
